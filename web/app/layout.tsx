@@ -43,6 +43,16 @@ export default function RootLayout({
             </nav>
           </div>
         </header>
+        <div className="bg-amber-50 border-b border-amber-200">
+          <div className="mx-auto max-w-5xl px-4 py-2.5 text-sm text-amber-900">
+            ⚠️ การจัดหมวดหมู่และการเชื่อมโยงกฎหมายลำดับรองในเว็บไซต์นี้<b>สร้างโดย AI อัตโนมัติ</b>{" "}
+            อาจมีข้อผิดพลาดหรือตกหล่น — โปรดตรวจสอบกับเอกสารต้นฉบับในราชกิจจานุเบกษาก่อนใช้อ้างอิง
+            และหากท่านเป็นนักกฎหมาย{" "}
+            <Link href="/community" className="underline font-medium hover:text-amber-700">
+              ช่วยเรายืนยันความถูกต้องได้ที่นี่
+            </Link>
+          </div>
+        </div>
         <main className="flex-1 mx-auto w-full max-w-5xl px-4 py-8">{children}</main>
         <footer className="border-t border-slate-200 bg-white">
           <div className="mx-auto max-w-5xl px-4 py-6 text-sm text-slate-500 space-y-1">
@@ -55,7 +65,8 @@ export default function RootLayout({
               <a href="https://data.go.th/dataset/dataset_02_04" className="underline">
                 data.go.th
               </a>
-              ) — ต้นแบบสาธิต การเชื่อมโยงกฎหมายลำดับรองสร้างขึ้นอัตโนมัติ โปรดตรวจสอบกับเอกสารต้นฉบับก่อนใช้อ้างอิง
+              ) — ต้นแบบสาธิต การเชื่อมโยงสร้างโดย AI อัตโนมัติและอาจผิดพลาด โปรดตรวจสอบกับเอกสารต้นฉบับก่อนใช้อ้างอิง
+              ทุกการเชื่อมโยงแสดงที่มา (จากชื่อเรื่อง/จากเนื้อหา PDF) และเปิดให้ชุมชนตรวจสอบแก้ไขได้
             </p>
           </div>
         </footer>

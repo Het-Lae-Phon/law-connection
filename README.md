@@ -70,6 +70,13 @@ See CONTRIBUTING.md — including the auth caveats to fix before public deployme
 - **Search is substring-based** — fine at this scale; Meilisearch/Typesense would give proper Thai tokenization and typo tolerance.
 - **Court decisions (คำพิพากษา/คำวินิจฉัย) are not linked** — different citation structure.
 
-## Attribution
+## Disclaimer / คำชี้แจง
 
-Prototype demo. Links are machine-generated — always verify against the original gazette PDF before legal use.
+**การเชื่อมโยงและการจัดหมวดหมู่ทั้งหมดสร้างโดย AI อัตโนมัติ** อาจมีข้อผิดพลาดหรือตกหล่น
+โปรดตรวจสอบกับเอกสารต้นฉบับในราชกิจจานุเบกษาก่อนใช้อ้างอิงทางกฎหมายเสมอ —
+และหากท่านเป็นนักกฎหมาย โปรดช่วยยืนยันความถูกต้องผ่านหน้า "การตรวจสอบโดยชุมชน"
+
+All links and classifications are **AI-generated** and may contain errors. Always
+verify against the original gazette PDF before legal use — and if you're a lawyer,
+please help verify through the community review page. A site-wide banner communicates
+this to every visitor, and each link shows its provenance badge until human-verified.
