@@ -1,6 +1,8 @@
 // Prototype uses SQLite; switch provider to "postgresql" + DATABASE_URL for deployment.
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // native for local dev; debian target for the Docker runtime image
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
