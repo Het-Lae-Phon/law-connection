@@ -20,8 +20,26 @@ model Act {
   fullName  String // e.g. "พระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562"
   entries   GazetteEntry[]
   contributions Contribution[]
+  sources   Source[]
 
   @@index([shortName])
+}
+
+// Authoritative reference for an act, contributed by the community and approved
+// by a moderator: e.g. Krisdika consolidated text, OCS entry, law.go.th page,
+// official English translation, regulator guidance.
+model Source {
+  id          Int      @id @default(autoincrement())
+  actId       Int
+  act         Act      @relation(fields: [actId], references: [id])
+  title       String // e.g. "ฉบับปรับปรุงล่าสุด (สำนักงานคณะกรรมการกฤษฎีกา)"
+  url         String
+  publisher   String? // e.g. "สำนักงานคณะกรรมการกฤษฎีกา"
+  contributor String?
+  createdAt   DateTime @default(now())
+
+  @@unique([actId, url])
+  @@index([actId])
 }
 
 // One published gazette item (maps 1:1 to a Royal Gazette PDF).

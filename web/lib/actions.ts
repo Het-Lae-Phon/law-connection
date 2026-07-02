@@ -96,6 +96,29 @@ export async function suggestEntry(formData: FormData) {
   revalidatePath("/community");
 }
 
+// "here is an authoritative reference for this act" — queued for moderation
+export async function suggestSource(formData: FormData) {
+  const actId = parseInt(clean(formData.get("actId")), 10);
+  const title = clean(formData.get("title"), 300);
+  const url = clean(formData.get("url"), 500);
+  if (isNaN(actId) || !title || !/^https?:\/\//i.test(url)) return;
+  await prisma.contribution.create({
+    data: {
+      type: "suggest_source",
+      status: "pending",
+      actId,
+      payload: JSON.stringify({
+        title,
+        url,
+        publisher: clean(formData.get("publisher"), 200),
+      }),
+      contributor: clean(formData.get("contributor"), 120) || null,
+    },
+  });
+  revalidatePath(`/act/${actId}`);
+  revalidatePath("/community");
+}
+
 // "an act is missing from the registry" — queued for moderation
 export async function suggestAct(formData: FormData) {
   const fullName = clean(formData.get("fullName"), 300);
@@ -178,6 +201,19 @@ export async function moderate(formData: FormData) {
           data: { ...data, pdfUrl: `community:${id}` },
         });
       }
+    } else if (c.type === "suggest_source" && c.actId && c.payload) {
+      const p = JSON.parse(c.payload) as { title: string; url: string; publisher?: string };
+      await prisma.source.upsert({
+        where: { actId_url: { actId: c.actId, url: p.url } },
+        create: {
+          actId: c.actId,
+          title: p.title,
+          url: p.url,
+          publisher: p.publisher || null,
+          contributor: c.contributor,
+        },
+        update: { title: p.title, publisher: p.publisher || null },
+      });
     } else if (c.type === "suggest_act" && c.payload) {
       const p = JSON.parse(c.payload) as { fullName: string };
       const m = p.fullName.match(

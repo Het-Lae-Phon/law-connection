@@ -11,6 +11,7 @@ const TYPE_LABELS: Record<string, string> = {
   comment: "ความเห็น",
   suggest_entry: "แจ้งกฎหมายลำดับรองที่ขาด",
   suggest_act: "แจ้งกฎหมายแม่บทที่ขาด",
+  suggest_source: "เสนอแหล่งอ้างอิงทางการ",
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -36,6 +37,8 @@ function Payload({ payload }: { payload: string | null }) {
     date: "วันที่",
     fullName: "ชื่อกฎหมาย",
     note: "หมายเหตุ",
+    url: "ลิงก์",
+    publisher: "หน่วยงานผู้เผยแพร่",
   };
   return (
     <dl className="text-sm text-slate-600 space-y-0.5">

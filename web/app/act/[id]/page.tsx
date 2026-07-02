@@ -2,7 +2,17 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { formatThaiDate } from "@/lib/format";
-import { confirmLink, disputeLink, addComment, suggestEntry } from "@/lib/actions";
+import { confirmLink, disputeLink, addComment, suggestEntry, suggestSource } from "@/lib/actions";
+
+// Thai government domains get an "official" badge on source links
+function isGovDomain(url: string): boolean {
+  try {
+    const host = new URL(url).hostname;
+    return host.endsWith(".go.th") || host.endsWith(".or.th");
+  } catch {
+    return false;
+  }
+}
 
 export const dynamic = "force-dynamic";
 
@@ -75,6 +85,7 @@ export default async function ActPage({
         where: { type: "comment", status: { not: "rejected" } },
         orderBy: { createdAt: "desc" },
       },
+      sources: { orderBy: { createdAt: "asc" } },
     },
   });
   if (!act) notFound();
@@ -115,6 +126,81 @@ export default async function ActPage({
           (จากราชกิจจานุเบกษา มิ.ย. 2566 – ปัจจุบัน)
         </p>
       </header>
+
+      <section className="rounded-lg border border-slate-200 bg-white p-5 space-y-3">
+        <h2 className="font-bold">
+          แหล่งอ้างอิงทางการ{" "}
+          <span className="text-sm font-normal text-slate-400">
+            {act.sources.length.toLocaleString("th-TH")} แหล่ง
+          </span>
+        </h2>
+        {act.sources.length === 0 && (
+          <p className="text-sm text-slate-500">
+            ยังไม่มีแหล่งอ้างอิง — ช่วยเพิ่มลิงก์ฉบับเต็ม/ฉบับปรับปรุงจากแหล่งทางการ เช่น
+            สำนักงานคณะกรรมการกฤษฎีกา (krisdika.go.th), ระบบกลางทางกฎหมาย (law.go.th)
+            เพื่อให้ผู้อื่นตรวจสอบความถูกต้องได้ง่ายขึ้น
+          </p>
+        )}
+        {act.sources.length > 0 && (
+          <ul className="space-y-2">
+            {act.sources.map((s) => (
+              <li key={s.id} className="flex flex-wrap items-baseline gap-2 text-sm">
+                <a
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-amber-800 hover:underline"
+                >
+                  {s.title} ↗
+                </a>
+                {isGovDomain(s.url) && (
+                  <span className="rounded bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5">
+                    เว็บไซต์หน่วยงานรัฐ
+                  </span>
+                )}
+                {s.publisher && <span className="text-slate-500">{s.publisher}</span>}
+                <span className="text-xs text-slate-400">
+                  เพิ่มโดย {s.contributor || "ไม่ระบุชื่อ"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <details>
+          <summary className="cursor-pointer text-sm text-amber-700 hover:underline">
+            + เสนอแหล่งอ้างอิง
+          </summary>
+          <form action={suggestSource} className="mt-3 grid gap-2 sm:grid-cols-2">
+            <input type="hidden" name="actId" value={act.id} />
+            <input
+              name="title"
+              required
+              placeholder="ชื่อแหล่ง เช่น ฉบับปรับปรุงล่าสุด (กฤษฎีกา) *"
+              className="rounded border border-slate-300 p-2 text-sm"
+            />
+            <input
+              name="url"
+              type="url"
+              required
+              placeholder="https://... *"
+              className="rounded border border-slate-300 p-2 text-sm"
+            />
+            <input
+              name="publisher"
+              placeholder="หน่วยงานผู้เผยแพร่ (ไม่บังคับ)"
+              className="rounded border border-slate-300 p-2 text-sm"
+            />
+            <input
+              name="contributor"
+              placeholder="ชื่อ/สังกัด (ไม่บังคับ)"
+              className="rounded border border-slate-300 p-2 text-sm"
+            />
+            <button className="rounded bg-slate-900 text-white px-4 py-2 text-sm hover:bg-slate-700 justify-self-start">
+              ส่งเข้าคิวตรวจสอบ
+            </button>
+          </form>
+        </details>
+      </section>
 
       {act.entries.length === 0 && (
         <p className="text-slate-500">
