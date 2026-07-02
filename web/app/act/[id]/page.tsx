@@ -68,19 +68,28 @@ function VerifyBadge({ status, source }: { status: string; source: string | null
   );
 }
 
+const PER_GROUP = 25;
+const PER_PAGE = 100;
+
 export default async function ActPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ type?: string; page?: string }>;
 }) {
   const { id } = await params;
+  const sp = await searchParams;
   const actId = parseInt(id, 10);
   if (isNaN(actId)) notFound();
+
+  // single-group drilldown view (?type=ประกาศ) — paginated
+  const filterType = (sp.type ?? "").trim() || null;
+  const page = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
 
   const act = await prisma.act.findUnique({
     where: { id: actId },
     include: {
-      entries: { orderBy: { publishedAt: "desc" } },
       contributions: {
         where: { type: "comment", status: { not: "rejected" } },
         orderBy: { createdAt: "desc" },
@@ -90,19 +99,35 @@ export default async function ActPage({
   });
   if (!act) notFound();
 
-  const groups = new Map<string, typeof act.entries>();
-  for (const e of act.entries) {
-    const key = e.instrumentType ?? "อื่น ๆ";
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push(e);
-  }
-  const orderedKeys = [
-    ...GROUP_ORDER.filter((k) => groups.has(k)),
-    ...[...groups.keys()].filter((k) => !GROUP_ORDER.includes(k)),
-  ];
+  const [typeCounts, subCount, verifiedCount] = await Promise.all([
+    prisma.gazetteEntry.groupBy({
+      by: ["instrumentType"],
+      where: { actId },
+      _count: true,
+    }),
+    prisma.gazetteEntry.count({ where: { actId, isPrimary: false } }),
+    prisma.gazetteEntry.count({ where: { actId, verifyStatus: "verified" } }),
+  ]);
+  const countByType = new Map(typeCounts.map((t) => [t.instrumentType ?? "อื่น ๆ", t._count]));
 
-  const subCount = act.entries.filter((e) => !e.isPrimary).length;
-  const verifiedCount = act.entries.filter((e) => e.verifyStatus === "verified").length;
+  const orderedKeys = filterType
+    ? [filterType]
+    : [
+        ...GROUP_ORDER.filter((k) => countByType.has(k)),
+        ...[...countByType.keys()].filter((k) => !GROUP_ORDER.includes(k)),
+      ];
+
+  // fetch entries per group (limited), or one paginated group in drilldown mode
+  const groups = new Map<string, Awaited<ReturnType<typeof prisma.gazetteEntry.findMany>>>();
+  for (const key of orderedKeys) {
+    const list = await prisma.gazetteEntry.findMany({
+      where: { actId, instrumentType: key === "อื่น ๆ" ? null : key },
+      orderBy: { publishedAt: { sort: "desc", nulls: "last" } },
+      take: filterType ? PER_PAGE : PER_GROUP,
+      skip: filterType ? (page - 1) * PER_PAGE : 0,
+    });
+    if (list.length) groups.set(key, list);
+  }
 
   return (
     <div className="space-y-8">
@@ -123,7 +148,7 @@ export default async function ActPage({
         <p className="text-slate-500 text-sm">
           กฎหมายลำดับรองและฉบับที่เกี่ยวข้องในระบบ {subCount.toLocaleString("th-TH")} ฉบับ
           {verifiedCount > 0 && ` · ยืนยันโดยชุมชนแล้ว ${verifiedCount.toLocaleString("th-TH")} ฉบับ`}{" "}
-          (จากราชกิจจานุเบกษา มิ.ย. 2566 – ปัจจุบัน)
+          (จากราชกิจจานุเบกษาและห้องสมุดกฎหมายกฤษฎีกา)
         </p>
       </header>
 
@@ -202,21 +227,41 @@ export default async function ActPage({
         </details>
       </section>
 
-      {act.entries.length === 0 && (
+      {groups.size === 0 && (
         <p className="text-slate-500">
           ยังไม่มีประกาศที่เชื่อมโยงกับกฎหมายฉบับนี้ในช่วงข้อมูลที่มี
         </p>
       )}
 
-      {orderedKeys.map((key) => {
+      {filterType && (
+        <p className="text-sm">
+          <Link href={`/act/${act.id}`} className="text-amber-700 hover:underline">
+            ← กลับไปหน้ารวมทุกประเภท
+          </Link>
+        </p>
+      )}
+
+      {orderedKeys.filter((k) => groups.has(k)).map((key) => {
         const list = groups.get(key)!;
+        const total = countByType.get(key) ?? list.length;
+        const shownAll = filterType ? false : total <= PER_GROUP;
         return (
           <section key={key}>
             <h2 className="text-lg font-bold mb-3 flex items-baseline gap-2">
               {GROUP_LABELS[key] ?? key}
               <span className="text-sm font-normal text-slate-400">
-                {list.length.toLocaleString("th-TH")} ฉบับ
+                {total.toLocaleString("th-TH")} ฉบับ
+                {!shownAll && !filterType && ` · แสดง ${list.length} รายการล่าสุด`}
+                {filterType && ` · หน้า ${page}/${Math.max(1, Math.ceil(total / PER_PAGE))}`}
               </span>
+              {!shownAll && !filterType && (
+                <Link
+                  href={`/act/${act.id}?type=${encodeURIComponent(key)}`}
+                  className="text-sm font-normal text-amber-700 hover:underline"
+                >
+                  ดูทั้งหมด →
+                </Link>
+              )}
             </h2>
             <ul className="divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
               {list.map((e) => (
@@ -234,6 +279,7 @@ export default async function ActPage({
                       <div className="text-sm text-slate-500">
                         {formatThaiDate(e.publishedAt)}
                         {e.volume > 0 && ` · เล่ม ${e.volume} ตอนที่ ${e.issue} ${e.category} หน้า ${e.page}`}
+                        {e.origin === "krisdika" && " · ห้องสมุดกฎหมาย สำนักงานคณะกรรมการกฤษฎีกา"}
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <VerifyBadge status={e.verifyStatus} source={e.linkSource} />
@@ -278,18 +324,40 @@ export default async function ActPage({
                         </details>
                       </div>
                     </div>
-                    <a
-                      href={e.pdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="shrink-0 rounded border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-100"
-                    >
-                      PDF ↗
-                    </a>
+                    {e.pdfUrl.startsWith("http") && (
+                      <a
+                        href={e.pdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0 rounded border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-100"
+                      >
+                        PDF ↗
+                      </a>
+                    )}
                   </div>
                 </li>
               ))}
             </ul>
+            {filterType && (
+              <div className="flex gap-2 justify-center text-sm mt-4">
+                {page > 1 && (
+                  <Link
+                    href={`/act/${act.id}?type=${encodeURIComponent(key)}&page=${page - 1}`}
+                    className="rounded border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-100"
+                  >
+                    ← ก่อนหน้า
+                  </Link>
+                )}
+                {page * PER_PAGE < total && (
+                  <Link
+                    href={`/act/${act.id}?type=${encodeURIComponent(key)}&page=${page + 1}`}
+                    className="rounded border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-100"
+                  >
+                    ถัดไป →
+                  </Link>
+                )}
+              </div>
+            )}
           </section>
         );
       })}

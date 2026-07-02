@@ -44,7 +44,7 @@ export default async function SearchPage({
         prisma.gazetteEntry.findMany({
           where,
           include: { act: true },
-          orderBy: { publishedAt: "desc" },
+          orderBy: { publishedAt: { sort: "desc", nulls: "last" } },
           skip: (page - 1) * PER_PAGE,
           take: PER_PAGE,
         }),
@@ -121,20 +121,25 @@ export default async function SearchPage({
               <li key={e.id} className="p-4 space-y-1">
                 <div className="flex items-start justify-between gap-4">
                   <div className="font-medium leading-snug">{e.title}</div>
-                  <a
-                    href={e.pdfUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="shrink-0 rounded border border-slate-300 px-3 py-1 text-sm hover:bg-slate-100"
-                  >
-                    PDF ↗
-                  </a>
+                  {e.pdfUrl.startsWith("http") && (
+                    <a
+                      href={e.pdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 rounded border border-slate-300 px-3 py-1 text-sm hover:bg-slate-100"
+                    >
+                      PDF ↗
+                    </a>
+                  )}
                 </div>
                 <div className="text-sm text-slate-500 flex flex-wrap gap-x-3">
                   <span>{formatThaiDate(e.publishedAt)}</span>
-                  <span>
-                    เล่ม {e.volume} ตอนที่ {e.issue} {e.category}
-                  </span>
+                  {e.volume > 0 && (
+                    <span>
+                      เล่ม {e.volume} ตอนที่ {e.issue} {e.category}
+                    </span>
+                  )}
+                  {e.origin === "krisdika" && <span>ห้องสมุดกฎหมายกฤษฎีกา</span>}
                   {e.act && (
                     <Link href={`/act/${e.act.id}`} className="text-amber-700 hover:underline">
                       ↳ {e.act.fullName}

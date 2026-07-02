@@ -11,3 +11,5 @@ web/next-env.d.ts
 # misc
 .DS_Store
 web/scripts/ocr
+data/thailaw/*.parquet
+data/thailaw/processed.jsonl

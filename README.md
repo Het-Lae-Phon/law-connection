@@ -60,10 +60,19 @@ See CONTRIBUTING.md — including the auth caveats to fix before public deployme
 
 - [Royal Gazette open dataset](https://data.go.th/dataset/dataset_02_04) — Office of the Secretary to the Cabinet, monthly JSON, June 2566 onward (title, volume, issue, section, page, PDF link)
 - PDFs served from [ratchakitcha.soc.go.th](https://ratchakitcha.soc.go.th)
+- [PyThaiNLP thailaw-v1.0](https://huggingface.co/datasets/pythainlp/thailaw-v1.0) — full text of ~52k documents
+  from the Krisdika/OCS law library (public domain under the Thai Copyright Act), including regulator
+  instruments (SEC, ministries) going back decades. Because it is full text, parent-act citations are
+  extracted directly from preambles — no OCR needed. Import via
+  `scripts/process-thailaw.py` → `scripts/import-thailaw.ts` (dedupes against gazette entries by
+  normalized title; entries carry `origin: "krisdika"`).
 
 ## Known limitations / roadmap
 
-- **Coverage starts June 2566** — the open dataset's beginning. Historical backfill would need scraping Ratchakitcha's search (Excel export) or a data request to the Cabinet Secretariat.
+- **Gazette feed starts June 2566**; historical coverage comes from the Krisdika library import (thailaw),
+  which reaches back decades but is a snapshot — a production pipeline should also ingest the
+  [Open Law Data Thailand](https://www.openlawdatathailand.org/) archive (1.3M gazette docs from 2428 on Hugging Face)
+  and law.go.th (currently behind CloudFront bot protection; needs an official API request).
 - **One parent act per entry** — some instruments are issued under multiple acts; schema should move to many-to-many.
 - **No repeal/amendment state tracking** — "(ฉบับที่ n)" amendments are flagged, but ยกเลิก (repeal) chains aren't resolved into an "in force" status yet.
 - **~5% of PDFs fail both text extraction and OCR** (image quality); a production pipeline would retry with higher DPI or a cloud OCR.

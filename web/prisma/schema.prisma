@@ -44,14 +44,15 @@ model Source {
 
 // One published gazette item (maps 1:1 to a Royal Gazette PDF).
 model GazetteEntry {
-  id             Int      @id @default(autoincrement())
+  id             Int       @id @default(autoincrement())
   title          String
-  publishedAt    DateTime
+  publishedAt    DateTime? // null for library documents without a gazette citation
   volume         Int
   issue          String
   category       String // ราชกิจจานุเบกษา section: ก, ข, ค, ง, ง พิเศษ ...
   page           Int
-  pdfUrl         String   @unique
+  origin         String    @default("gazette") // gazette | krisdika | community
+  pdfUrl         String    @unique // http(s) URL, or "thailaw:<n>" for library docs
   instrumentType String? // กฎกระทรวง | ประกาศ | ระเบียบ | ข้อบังคับ | คำสั่ง | พระราชกฤษฎีกา | ...
   isPrimary      Boolean  @default(false) // true when the entry itself is primary legislation
   isAmendment    Boolean  @default(false) // "(ฉบับที่ n)" of primary legislation

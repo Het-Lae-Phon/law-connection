@@ -5,8 +5,8 @@ const thaiDate = new Intl.DateTimeFormat("th-TH-u-ca-buddhist", {
   timeZone: "UTC",
 });
 
-export function formatThaiDate(d: Date): string {
-  return thaiDate.format(d);
+export function formatThaiDate(d: Date | null): string {
+  return d ? thaiDate.format(d) : "ไม่ระบุวันที่";
 }
 
 // Human label for a gazette section (ประเภท)
