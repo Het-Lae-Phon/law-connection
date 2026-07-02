@@ -1,12 +1,12 @@
-// Prototype uses SQLite; switch provider to "postgresql" + DATABASE_URL for deployment.
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL") // file:./dev.db locally; file:/data/dev.db in deployment
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 // Canonical registry of primary legislation (พ.ร.บ. / พ.ร.ก. / ประมวลกฎหมาย / รัฐธรรมนูญ).
