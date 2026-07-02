@@ -61,7 +61,18 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
 
       <div className="rounded-lg border border-slate-300 bg-white p-4 text-sm space-y-2">
         <div className="font-bold">การเข้าถึงต้นฉบับ</div>
-        {entry.volume > 0 ? (
+        {entry.sourceUrl?.startsWith("http") ? (
+          <p>
+            <a
+              href={entry.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block rounded bg-slate-900 text-white px-3 py-1.5 hover:bg-slate-700"
+            >
+              เปิดต้นฉบับ PDF ในราชกิจจานุเบกษา ↗
+            </a>
+          </p>
+        ) : entry.volume > 0 ? (
           <p>
             ต้นฉบับประกาศใน<b>ราชกิจจานุเบกษา เล่ม {entry.volume} ตอนที่ {entry.issue}{" "}
             {entry.category} หน้า {entry.page}</b>

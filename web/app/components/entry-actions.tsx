@@ -5,6 +5,7 @@ import { CopyCite } from "@/app/components/copy-cite";
 interface Entry extends CitableEntry {
   id: number;
   origin: string;
+  sourceUrl?: string | null;
 }
 
 /**
@@ -18,7 +19,7 @@ export function EntryActions({ entry }: { entry: Entry }) {
   const hasText = entry.origin === "krisdika"; // library imports carry full text
   return (
     <div className="shrink-0 flex flex-col items-stretch gap-1.5 w-36">
-      {source ? (
+      {source && (
         <a
           href={source.url}
           target="_blank"
@@ -28,16 +29,15 @@ export function EntryActions({ entry }: { entry: Entry }) {
         >
           ต้นฉบับ · {source.label} ↗
         </a>
-      ) : (
-        hasText && (
-          <Link
-            href={`/doc/${entry.id}`}
-            className="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-center hover:bg-slate-100"
-            title="สำเนาข้อความสำหรับอ้างอิง — ไม่ใช่ต้นฉบับ"
-          >
-            สำเนาอ้างอิง
-          </Link>
-        )
+      )}
+      {!source && hasText && (
+        <Link
+          href={`/doc/${entry.id}`}
+          className="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-center hover:bg-slate-100"
+          title="สำเนาข้อความสำหรับอ้างอิง — ไม่ใช่ต้นฉบับ"
+        >
+          สำเนาอ้างอิง
+        </Link>
       )}
       <CopyCite citation={buildCitation(entry)} small />
     </div>

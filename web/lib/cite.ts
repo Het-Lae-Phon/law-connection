@@ -30,13 +30,25 @@ export interface OriginalSource {
 }
 
 // The authoritative destination for an entry, when a working public link exists.
-export function originalSource(e: { pdfUrl: string; origin: string }): OriginalSource | null {
-  if (!e.pdfUrl.startsWith("http")) return null;
+// pdfUrl is the ingest-time link; sourceUrl is a later-attached official link
+// (e.g. resolved through the Royal Gazette Web Service).
+export function originalSource(e: {
+  pdfUrl: string;
+  sourceUrl?: string | null;
+  origin: string;
+}): OriginalSource | null {
+  const url = e.pdfUrl.startsWith("http")
+    ? e.pdfUrl
+    : e.sourceUrl?.startsWith("http")
+      ? e.sourceUrl
+      : null;
+  if (!url) return null;
   try {
-    const host = new URL(e.pdfUrl).hostname;
-    if (host.includes("ratchakitcha")) return { label: "ราชกิจจานุเบกษา", url: e.pdfUrl };
-    if (host.includes("pdpc")) return { label: "เว็บไซต์ สคส.", url: e.pdfUrl };
-    return { label: "เอกสารต้นทาง", url: e.pdfUrl };
+    const host = new URL(url).hostname;
+    if (host.includes("ratchakitcha") || host.includes("soc.go.th"))
+      return { label: "ราชกิจจานุเบกษา", url };
+    if (host.includes("pdpc")) return { label: "เว็บไซต์ สคส.", url };
+    return { label: "เอกสารต้นทาง", url };
   } catch {
     return null;
   }
