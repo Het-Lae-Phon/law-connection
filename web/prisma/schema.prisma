@@ -5,7 +5,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  url      = env("DATABASE_URL") // file:./dev.db locally; file:/data/dev.db in deployment
 }
 
 // Canonical registry of primary legislation (พ.ร.บ. / พ.ร.ก. / ประมวลกฎหมาย / รัฐธรรมนูญ).
