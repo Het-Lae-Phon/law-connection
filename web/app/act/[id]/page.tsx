@@ -336,23 +336,36 @@ export default async function ActPage({
                         </details>
                       </div>
                     </div>
-                    {e.pdfUrl.startsWith("http") ? (
-                      <a
-                        href={e.pdfUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="shrink-0 rounded border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-100"
-                      >
-                        {e.pdfUrl.toLowerCase().endsWith(".pdf") ? "PDF" : "เอกสาร"} ↗
-                      </a>
-                    ) : (
-                      <Link
-                        href={`/doc/${e.id}`}
-                        className="shrink-0 rounded border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm hover:bg-amber-100"
-                      >
-                        อ่านฉบับเต็ม
-                      </Link>
-                    )}
+                    <div className="shrink-0 flex flex-col items-stretch gap-1.5">
+                      {e.pdfUrl.startsWith("http") ? (
+                        <a
+                          href={e.pdfUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="rounded border border-slate-300 px-3 py-1.5 text-sm text-center hover:bg-slate-100"
+                        >
+                          {e.pdfUrl.toLowerCase().endsWith(".pdf") ? "PDF" : "เอกสาร"} ↗
+                        </a>
+                      ) : (
+                        <Link
+                          href={`/doc/${e.id}`}
+                          className="rounded border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm text-center hover:bg-amber-100"
+                        >
+                          อ่านฉบับเต็ม
+                        </Link>
+                      )}
+                      {e.sourceUrl && (
+                        <a
+                          href={e.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="rounded border border-slate-300 px-3 py-1.5 text-sm text-center hover:bg-slate-100"
+                          title="ต้นฉบับที่ห้องสมุดกฎหมาย สำนักงานคณะกรรมการกฤษฎีกา"
+                        >
+                          กฤษฎีกา ↗
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </li>
               ))}

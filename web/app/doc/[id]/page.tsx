@@ -58,6 +58,16 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
             </Link>
           </div>
         )}
+        {entry.sourceUrl && (
+          <a
+            href={entry.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block rounded border border-slate-300 bg-white px-3 py-1.5 text-sm hover:bg-slate-100"
+          >
+            ดูต้นฉบับที่ห้องสมุดกฎหมายกฤษฎีกา ↗
+          </a>
+        )}
       </header>
 
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">

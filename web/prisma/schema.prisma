@@ -53,6 +53,7 @@ model GazetteEntry {
   page           Int
   origin         String    @default("gazette") // gazette | krisdika | community
   pdfUrl         String    @unique // http(s) URL, or "thailaw:<n>" for library docs
+  sourceUrl      String? // external reference page (e.g. Krisdika librarian URL)
   instrumentType String? // กฎกระทรวง | ประกาศ | ระเบียบ | ข้อบังคับ | คำสั่ง | พระราชกฤษฎีกา | ...
   isPrimary      Boolean  @default(false) // true when the entry itself is primary legislation
   isAmendment    Boolean  @default(false) // "(ฉบับที่ n)" of primary legislation

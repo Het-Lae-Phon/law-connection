@@ -121,23 +121,36 @@ export default async function SearchPage({
               <li key={e.id} className="p-4 space-y-1">
                 <div className="flex items-start justify-between gap-4">
                   <div className="font-medium leading-snug">{e.title}</div>
-                  {e.pdfUrl.startsWith("http") ? (
-                    <a
-                      href={e.pdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="shrink-0 rounded border border-slate-300 px-3 py-1 text-sm hover:bg-slate-100"
-                    >
-                      PDF ↗
-                    </a>
-                  ) : (
-                    <Link
-                      href={`/doc/${e.id}`}
-                      className="shrink-0 rounded border border-amber-300 bg-amber-50 px-3 py-1 text-sm hover:bg-amber-100"
-                    >
-                      อ่านฉบับเต็ม
-                    </Link>
-                  )}
+                  <div className="shrink-0 flex flex-col items-stretch gap-1">
+                    {e.pdfUrl.startsWith("http") ? (
+                      <a
+                        href={e.pdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded border border-slate-300 px-3 py-1 text-sm text-center hover:bg-slate-100"
+                      >
+                        PDF ↗
+                      </a>
+                    ) : (
+                      <Link
+                        href={`/doc/${e.id}`}
+                        className="rounded border border-amber-300 bg-amber-50 px-3 py-1 text-sm text-center hover:bg-amber-100"
+                      >
+                        อ่านฉบับเต็ม
+                      </Link>
+                    )}
+                    {e.sourceUrl && (
+                      <a
+                        href={e.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded border border-slate-300 px-3 py-1 text-sm text-center hover:bg-slate-100"
+                        title="ต้นฉบับที่ห้องสมุดกฎหมาย สำนักงานคณะกรรมการกฤษฎีกา"
+                      >
+                        กฤษฎีกา ↗
+                      </a>
+                    )}
+                  </div>
                 </div>
                 <div className="text-sm text-slate-500 flex flex-wrap gap-x-3">
                   <span>{formatThaiDate(e.publishedAt)}</span>
