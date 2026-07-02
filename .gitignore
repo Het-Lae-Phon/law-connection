@@ -1,0 +1,13 @@
+# bulk data — re-downloadable from data.go.th / ratchakitcha
+data/raw/
+data/pdfs/
+
+# app
+web/node_modules/
+web/.next/
+web/prisma/dev.db*
+web/next-env.d.ts
+
+# misc
+.DS_Store
+web/scripts/ocr

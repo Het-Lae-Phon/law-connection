@@ -1,0 +1,45 @@
+// Prototype uses SQLite; switch provider to "postgresql" + DATABASE_URL for deployment.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// Canonical registry of primary legislation (พ.ร.บ. / พ.ร.ก. / ประมวลกฎหมาย / รัฐธรรมนูญ).
+// Rows are created both from acts published in the gazette and from acts
+// referenced as parents in sub-regulation titles.
+model Act {
+  id        Int      @id @default(autoincrement())
+  slug      String   @unique
+  actType   String // พระราชบัญญัติ | พระราชบัญญัติประกอบรัฐธรรมนูญ | พระราชกำหนด | ประมวลกฎหมาย | รัฐธรรมนูญ
+  shortName String // e.g. "คุ้มครองข้อมูลส่วนบุคคล"
+  year      Int? // B.E. year of the base act, when known
+  fullName  String // e.g. "พระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562"
+  entries   GazetteEntry[]
+
+  @@index([shortName])
+}
+
+// One published gazette item (maps 1:1 to a Royal Gazette PDF).
+model GazetteEntry {
+  id             Int      @id @default(autoincrement())
+  title          String
+  publishedAt    DateTime
+  volume         Int
+  issue          String
+  category       String // ราชกิจจานุเบกษา section: ก, ข, ค, ง, ง พิเศษ ...
+  page           Int
+  pdfUrl         String   @unique
+  instrumentType String? // กฎกระทรวง | ประกาศ | ระเบียบ | ข้อบังคับ | คำสั่ง | พระราชกฤษฎีกา | ...
+  isPrimary      Boolean  @default(false) // true when the entry itself is primary legislation
+  isAmendment    Boolean  @default(false) // "(ฉบับที่ n)" of primary legislation
+  actId          Int?
+  act            Act?     @relation(fields: [actId], references: [id])
+
+  @@index([actId])
+  @@index([instrumentType])
+  @@index([publishedAt])
+}
