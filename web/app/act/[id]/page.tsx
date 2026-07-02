@@ -44,6 +44,18 @@ const GROUP_LABELS: Record<string, string> = {
   "คำสั่ง": "คำสั่ง",
 };
 
+const ORIGIN_LABELS: Record<string, string> = {
+  krisdika: "ห้องสมุดกฎหมาย สำนักงานคณะกรรมการกฤษฎีกา",
+  pdpc: "เว็บไซต์ สคส. (PDPC)",
+};
+
+const SOURCE_LABELS: Record<string, string> = {
+  pdf: "จากเนื้อหา PDF",
+  title: "จากชื่อเรื่อง",
+  text: "จากเนื้อหากฎหมาย",
+  regulator: "จากเว็บไซต์หน่วยงานกำกับดูแล",
+};
+
 function VerifyBadge({ status, source }: { status: string; source: string | null }) {
   if (status === "verified")
     return (
@@ -57,7 +69,7 @@ function VerifyBadge({ status, source }: { status: string; source: string | null
         ⚠ มีข้อโต้แย้ง — รอตรวจสอบ
       </span>
     );
-  const how = source === "pdf" ? "จากเนื้อหา PDF" : source === "title" ? "จากชื่อเรื่อง" : "";
+  const how = (source && SOURCE_LABELS[source]) || "";
   return (
     <span
       className="inline-block rounded bg-slate-100 text-slate-600 text-xs px-1.5 py-0.5"
@@ -279,7 +291,7 @@ export default async function ActPage({
                       <div className="text-sm text-slate-500">
                         {formatThaiDate(e.publishedAt)}
                         {e.volume > 0 && ` · เล่ม ${e.volume} ตอนที่ ${e.issue} ${e.category} หน้า ${e.page}`}
-                        {e.origin === "krisdika" && " · ห้องสมุดกฎหมาย สำนักงานคณะกรรมการกฤษฎีกา"}
+                        {ORIGIN_LABELS[e.origin] && ` · ${ORIGIN_LABELS[e.origin]}`}
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <VerifyBadge status={e.verifyStatus} source={e.linkSource} />
@@ -331,7 +343,7 @@ export default async function ActPage({
                         rel="noopener noreferrer"
                         className="shrink-0 rounded border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-100"
                       >
-                        PDF ↗
+                        {e.pdfUrl.toLowerCase().endsWith(".pdf") ? "PDF" : "เอกสาร"} ↗
                       </a>
                     )}
                   </div>

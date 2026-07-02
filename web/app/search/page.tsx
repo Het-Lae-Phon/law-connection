@@ -140,6 +140,7 @@ export default async function SearchPage({
                     </span>
                   )}
                   {e.origin === "krisdika" && <span>ห้องสมุดกฎหมายกฤษฎีกา</span>}
+                  {e.origin === "pdpc" && <span>เว็บไซต์ สคส. (PDPC)</span>}
                   {e.act && (
                     <Link href={`/act/${e.act.id}`} className="text-amber-700 hover:underline">
                       ↳ {e.act.fullName}
