@@ -19,6 +19,7 @@ model Act {
   year      Int? // B.E. year of the base act, when known
   fullName  String // e.g. "พระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562"
   entries   GazetteEntry[]
+  contributions Contribution[]
 
   @@index([shortName])
 }
@@ -38,8 +39,33 @@ model GazetteEntry {
   isAmendment    Boolean  @default(false) // "(ฉบับที่ n)" of primary legislation
   actId          Int?
   act            Act?     @relation(fields: [actId], references: [id])
+  linkSource     String? // how actId was derived: "title" | "pdf" | "community"
+  verifyStatus   String   @default("machine") // machine | verified | disputed
+  contributions  Contribution[]
 
   @@index([actId])
   @@index([instrumentType])
   @@index([publishedAt])
+}
+
+// Community input, Wikipedia-style: every change is recorded, nothing is silently
+// overwritten. confirm/dispute take effect immediately (and stay auditable here);
+// suggestions wait in the moderation queue.
+model Contribution {
+  id          Int           @id @default(autoincrement())
+  type        String // confirm_link | dispute_link | comment | suggest_entry | suggest_act
+  status      String        @default("pending") // pending | applied | approved | rejected
+  entryId     Int?
+  entry       GazetteEntry? @relation(fields: [entryId], references: [id])
+  actId       Int?
+  act         Act?          @relation(fields: [actId], references: [id])
+  payload     String? // JSON details: reason, suggested title/url/date/act name
+  comment     String?
+  contributor String? // display name / affiliation (self-reported in prototype)
+  createdAt   DateTime      @default(now())
+  reviewedAt  DateTime?
+
+  @@index([status])
+  @@index([entryId])
+  @@index([actId])
 }

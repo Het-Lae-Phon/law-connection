@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { formatThaiDate } from "@/lib/format";
+import { confirmLink, disputeLink, addComment, suggestEntry } from "@/lib/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,30 @@ const GROUP_LABELS: Record<string, string> = {
   "คำสั่ง": "คำสั่ง",
 };
 
+function VerifyBadge({ status, source }: { status: string; source: string | null }) {
+  if (status === "verified")
+    return (
+      <span className="inline-block rounded bg-green-100 text-green-800 text-xs px-1.5 py-0.5">
+        ✓ ยืนยันโดยชุมชนแล้ว
+      </span>
+    );
+  if (status === "disputed")
+    return (
+      <span className="inline-block rounded bg-red-100 text-red-800 text-xs px-1.5 py-0.5">
+        ⚠ มีข้อโต้แย้ง — รอตรวจสอบ
+      </span>
+    );
+  const how = source === "pdf" ? "จากเนื้อหา PDF" : source === "title" ? "จากชื่อเรื่อง" : "";
+  return (
+    <span
+      className="inline-block rounded bg-slate-100 text-slate-600 text-xs px-1.5 py-0.5"
+      title="สร้างโดยระบบ ยังไม่ได้รับการยืนยันโดยผู้เชี่ยวชาญ"
+    >
+      ⚙ เชื่อมโยงอัตโนมัติ{how && ` (${how})`}
+    </span>
+  );
+}
+
 export default async function ActPage({
   params,
 }: {
@@ -44,7 +69,13 @@ export default async function ActPage({
 
   const act = await prisma.act.findUnique({
     where: { id: actId },
-    include: { entries: { orderBy: { publishedAt: "desc" } } },
+    include: {
+      entries: { orderBy: { publishedAt: "desc" } },
+      contributions: {
+        where: { type: "comment", status: { not: "rejected" } },
+        orderBy: { createdAt: "desc" },
+      },
+    },
   });
   if (!act) notFound();
 
@@ -60,6 +91,7 @@ export default async function ActPage({
   ];
 
   const subCount = act.entries.filter((e) => !e.isPrimary).length;
+  const verifiedCount = act.entries.filter((e) => e.verifyStatus === "verified").length;
 
   return (
     <div className="space-y-8">
@@ -79,6 +111,7 @@ export default async function ActPage({
         <h1 className="text-2xl font-bold leading-snug">{act.fullName}</h1>
         <p className="text-slate-500 text-sm">
           กฎหมายลำดับรองและฉบับที่เกี่ยวข้องในระบบ {subCount.toLocaleString("th-TH")} ฉบับ
+          {verifiedCount > 0 && ` · ยืนยันโดยชุมชนแล้ว ${verifiedCount.toLocaleString("th-TH")} ฉบับ`}{" "}
           (จากราชกิจจานุเบกษา มิ.ย. 2566 – ปัจจุบัน)
         </p>
       </header>
@@ -103,7 +136,7 @@ export default async function ActPage({
               {list.map((e) => (
                 <li key={e.id} className="p-4">
                   <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-1 min-w-0">
+                    <div className="space-y-1.5 min-w-0">
                       <div className="font-medium leading-snug">
                         {e.title}
                         {e.isAmendment && (
@@ -113,8 +146,50 @@ export default async function ActPage({
                         )}
                       </div>
                       <div className="text-sm text-slate-500">
-                        {formatThaiDate(e.publishedAt)} · เล่ม {e.volume} ตอนที่ {e.issue}{" "}
-                        {e.category} หน้า {e.page}
+                        {formatThaiDate(e.publishedAt)}
+                        {e.volume > 0 && ` · เล่ม ${e.volume} ตอนที่ ${e.issue} ${e.category} หน้า ${e.page}`}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <VerifyBadge status={e.verifyStatus} source={e.linkSource} />
+                        {e.verifyStatus !== "verified" && (
+                          <form action={confirmLink}>
+                            <input type="hidden" name="entryId" value={e.id} />
+                            <button className="text-xs text-green-700 hover:underline" title="ยืนยันว่าการเชื่อมโยงนี้ถูกต้อง">
+                              ✓ ยืนยันว่าถูกต้อง
+                            </button>
+                          </form>
+                        )}
+                        <details className="text-xs">
+                          <summary className="cursor-pointer text-red-700 hover:underline list-none">
+                            ⚠ แจ้งว่าไม่ถูกต้อง
+                          </summary>
+                          <form
+                            action={disputeLink}
+                            className="mt-2 space-y-2 rounded border border-red-200 bg-red-50 p-3 w-72"
+                          >
+                            <input type="hidden" name="entryId" value={e.id} />
+                            <textarea
+                              name="reason"
+                              required
+                              placeholder="เหตุผล เช่น ออกตามกฎหมายฉบับอื่น..."
+                              className="w-full rounded border border-slate-300 p-2 text-sm"
+                              rows={2}
+                            />
+                            <input
+                              name="correctAct"
+                              placeholder="กฎหมายแม่บทที่ถูกต้อง (ถ้าทราบ)"
+                              className="w-full rounded border border-slate-300 p-2 text-sm"
+                            />
+                            <input
+                              name="contributor"
+                              placeholder="ชื่อ/สังกัด (ไม่บังคับ)"
+                              className="w-full rounded border border-slate-300 p-2 text-sm"
+                            />
+                            <button className="rounded bg-red-700 text-white px-3 py-1.5">
+                              ส่งข้อโต้แย้ง
+                            </button>
+                          </form>
+                        </details>
                       </div>
                     </div>
                     <a
@@ -132,6 +207,71 @@ export default async function ActPage({
           </section>
         );
       })}
+
+      <section className="rounded-lg border border-dashed border-slate-300 bg-white p-5 space-y-3">
+        <h2 className="font-bold">พบกฎหมายลำดับรองที่ขาดหายไป?</h2>
+        <p className="text-sm text-slate-500">
+          แจ้งกฎกระทรวง ประกาศ หรือระเบียบที่ออกตามกฎหมายฉบับนี้แต่ไม่ปรากฏในรายการ
+          ข้อเสนอจะเข้าคิวตรวจสอบก่อนแสดงผล
+        </p>
+        <form action={suggestEntry} className="grid gap-2 sm:grid-cols-2">
+          <input type="hidden" name="actId" value={act.id} />
+          <input
+            name="title"
+            required
+            placeholder="ชื่อเต็มของกฎหมายลำดับรอง *"
+            className="rounded border border-slate-300 p-2 text-sm sm:col-span-2"
+          />
+          <input
+            name="pdfUrl"
+            placeholder="ลิงก์ PDF ราชกิจจานุเบกษา (ถ้ามี)"
+            className="rounded border border-slate-300 p-2 text-sm"
+          />
+          <input name="date" type="date" className="rounded border border-slate-300 p-2 text-sm" />
+          <input
+            name="contributor"
+            placeholder="ชื่อ/สังกัด (ไม่บังคับ)"
+            className="rounded border border-slate-300 p-2 text-sm"
+          />
+          <button className="rounded bg-slate-900 text-white px-4 py-2 text-sm hover:bg-slate-700">
+            ส่งเข้าคิวตรวจสอบ
+          </button>
+        </form>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-bold">
+          ความเห็น <span className="text-sm font-normal text-slate-400">{act.contributions.length}</span>
+        </h2>
+        {act.contributions.map((c) => (
+          <div key={c.id} className="rounded-lg border border-slate-200 bg-white p-4 text-sm">
+            <div className="text-slate-700 whitespace-pre-wrap">{c.comment}</div>
+            <div className="text-xs text-slate-400 mt-2">
+              {c.contributor || "ไม่ระบุชื่อ"} · {formatThaiDate(c.createdAt)}
+            </div>
+          </div>
+        ))}
+        <form action={addComment} className="space-y-2">
+          <input type="hidden" name="actId" value={act.id} />
+          <textarea
+            name="comment"
+            required
+            placeholder="ข้อสังเกตเกี่ยวกับกฎหมายฉบับนี้ เช่น สถานะการยกเลิก ความเชื่อมโยงที่ควรเพิ่ม..."
+            className="w-full rounded border border-slate-300 p-3 text-sm"
+            rows={3}
+          />
+          <div className="flex gap-2">
+            <input
+              name="contributor"
+              placeholder="ชื่อ/สังกัด (ไม่บังคับ)"
+              className="flex-1 rounded border border-slate-300 p-2 text-sm"
+            />
+            <button className="rounded bg-slate-900 text-white px-4 py-2 text-sm hover:bg-slate-700">
+              แสดงความเห็น
+            </button>
+          </div>
+        </form>
+      </section>
     </div>
   );
 }

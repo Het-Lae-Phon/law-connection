@@ -37,6 +37,9 @@ export default function RootLayout({
               <Link href="/search" className="hover:text-white">
                 ค้นหา
               </Link>
+              <Link href="/community" className="hover:text-white">
+                การตรวจสอบโดยชุมชน
+              </Link>
             </nav>
           </div>
         </header>

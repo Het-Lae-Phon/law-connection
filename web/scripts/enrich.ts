@@ -192,7 +192,10 @@ async function main() {
         }
       }
       if (actId) {
-        await prisma.gazetteEntry.update({ where: { id: entry.id }, data: { actId } });
+        await prisma.gazetteEntry.update({
+          where: { id: entry.id },
+          data: { actId, linkSource: "pdf" },
+        });
         linked++;
       }
       await new Promise((r) => setTimeout(r, 150)); // be polite to the gazette server

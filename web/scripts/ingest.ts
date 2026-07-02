@@ -180,6 +180,14 @@ function loadRaw(dataDir: string): RawEntry[] {
 
 async function main() {
   const dataDir = process.argv[2] ?? path.join(__dirname, "..", "..", "data", "raw");
+  const contribCount = await prisma.contribution.count();
+  if (contribCount > 0 && !process.argv.includes("--force")) {
+    console.error(
+      `refusing to wipe: ${contribCount} community contributions exist. ` +
+        "Re-ingesting deletes all entries and links. Pass --force to override."
+    );
+    process.exit(1);
+  }
   const raw = loadRaw(dataDir);
   console.log(`loaded ${raw.length} raw rows`);
 
@@ -293,6 +301,7 @@ async function main() {
         isPrimary: r.isPrimary,
         isAmendment: r.isAmendment,
         actId: r.actKey ? (actIds.get(r.actKey) ?? null) : null,
+        linkSource: r.actKey ? "title" : null,
       })),
     });
   }

@@ -43,6 +43,19 @@ npm run dev
 
 The Prisma schema is Postgres-compatible — change `provider` in `web/prisma/schema.prisma` and set `DATABASE_URL` to deploy.
 
+## Community verification (Wikipedia model)
+
+Machine links are a starting point, not the truth. Every link carries a
+provenance badge (⚙ auto from title / auto from PDF preamble, ✓ community-verified,
+⚠ disputed) and the site accepts contributions without an account:
+
+- confirm / dispute any link (immediate effect, fully audited)
+- report missing sub-regulations on an act's page
+- report missing acts and leave talk-page comments
+- `/community` — public moderation queue and decision history
+
+See CONTRIBUTING.md — including the auth caveats to fix before public deployment.
+
 ## Data sources
 
 - [Royal Gazette open dataset](https://data.go.th/dataset/dataset_02_04) — Office of the Secretary to the Cabinet, monthly JSON, June 2566 onward (title, volume, issue, section, page, PDF link)
