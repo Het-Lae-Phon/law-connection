@@ -22,20 +22,34 @@ export default function RootLayout({
   return (
     <html lang="th" className={`${notoThai.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-[family-name:var(--font-noto-thai)] bg-slate-50 text-slate-900">
-        <header className="bg-slate-900 text-white">
-          <div className="mx-auto max-w-5xl px-4 py-4 flex items-baseline justify-between gap-4 flex-wrap">
-            <Link href="/" className="text-xl font-bold tracking-tight">
+        <header className="sticky top-0 z-20 bg-slate-900 text-white">
+          <div className="mx-auto max-w-5xl px-4 py-3 flex items-center justify-between gap-4 flex-wrap">
+            <Link href="/" className="text-xl font-bold tracking-tight shrink-0">
               กฎหมาย<span className="text-amber-400">เชื่อมโยง</span>
             </Link>
+            <form action="/search" className="order-3 relative w-full sm:order-none sm:w-auto sm:flex-1 sm:max-w-xs">
+              <svg
+                className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
+              </svg>
+              <input
+                type="text"
+                name="q"
+                placeholder="ค้นหากฎหมาย..."
+                className="w-full rounded-md border border-slate-700 bg-slate-800 pl-8 pr-3 py-1.5 text-sm text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+            </form>
             <nav className="flex gap-5 text-sm text-slate-300">
-              <Link href="/" className="hover:text-white">
-                หน้าแรก
-              </Link>
               <Link href="/acts" className="hover:text-white">
-                กฎหมายแม่บททั้งหมด
+                กฎหมายแม่บท
               </Link>
-              <Link href="/search" className="hover:text-white">
-                ค้นหา
+              <Link href="/entries" className="hover:text-white">
+                กฎหมายลำดับรอง
               </Link>
               <Link href="/community" className="hover:text-white">
                 การตรวจสอบโดยชุมชน

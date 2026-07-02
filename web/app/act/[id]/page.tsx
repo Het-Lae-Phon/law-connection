@@ -5,7 +5,10 @@ import { formatThaiDate } from "@/lib/format";
 import { confirmLink, disputeLink, addComment, suggestEntry, suggestSource } from "@/lib/actions";
 import { EntryActions } from "@/app/components/entry-actions";
 import { CopyCite } from "@/app/components/copy-cite";
+import { VerifyBadge } from "@/app/components/verify-badge";
+import { BackLink } from "@/app/components/back-link";
 import { buildCitation } from "@/lib/cite";
+import { GROUP_ORDER, GROUP_LABELS } from "@/lib/instrument-labels";
 
 // Thai government domains get an "official" badge on source links
 function isGovDomain(url: string): boolean {
@@ -19,69 +22,10 @@ function isGovDomain(url: string): boolean {
 
 export const dynamic = "force-dynamic";
 
-const GROUP_ORDER = [
-  "พระราชบัญญัติ",
-  "พระราชบัญญัติประกอบรัฐธรรมนูญ",
-  "พระราชกำหนด",
-  "พระราชกฤษฎีกา",
-  "กฎกระทรวง",
-  "กฎ",
-  "ประกาศ",
-  "ระเบียบ",
-  "ข้อบังคับ",
-  "ข้อกำหนด",
-  "คำสั่ง",
-];
-
-const GROUP_LABELS: Record<string, string> = {
-  "พระราชบัญญัติ": "พระราชบัญญัติ / ฉบับแก้ไขเพิ่มเติม",
-  "พระราชบัญญัติประกอบรัฐธรรมนูญ": "พระราชบัญญัติประกอบรัฐธรรมนูญ",
-  "พระราชกำหนด": "พระราชกำหนด",
-  "พระราชกฤษฎีกา": "พระราชกฤษฎีกา",
-  "กฎกระทรวง": "กฎกระทรวง",
-  "กฎ": "กฎ (ก.พ. / ก.ตร. / อื่น ๆ)",
-  "ประกาศ": "ประกาศ",
-  "ระเบียบ": "ระเบียบ",
-  "ข้อบังคับ": "ข้อบังคับ",
-  "ข้อกำหนด": "ข้อกำหนด",
-  "คำสั่ง": "คำสั่ง",
-};
-
 const ORIGIN_LABELS: Record<string, string> = {
   krisdika: "ห้องสมุดกฎหมาย สำนักงานคณะกรรมการกฤษฎีกา",
   pdpc: "เว็บไซต์ สคส. (PDPC)",
 };
-
-const SOURCE_LABELS: Record<string, string> = {
-  pdf: "จากเนื้อหา PDF",
-  title: "จากชื่อเรื่อง",
-  text: "จากเนื้อหากฎหมาย",
-  regulator: "จากเว็บไซต์หน่วยงานกำกับดูแล",
-};
-
-function VerifyBadge({ status, source }: { status: string; source: string | null }) {
-  if (status === "verified")
-    return (
-      <span className="inline-block rounded bg-green-100 text-green-800 text-xs px-1.5 py-0.5">
-        ✓ ยืนยันโดยชุมชนแล้ว
-      </span>
-    );
-  if (status === "disputed")
-    return (
-      <span className="inline-block rounded bg-red-100 text-red-800 text-xs px-1.5 py-0.5">
-        ⚠ มีข้อโต้แย้ง — รอตรวจสอบ
-      </span>
-    );
-  const how = (source && SOURCE_LABELS[source]) || "";
-  return (
-    <span
-      className="inline-block rounded bg-slate-100 text-slate-600 text-xs px-1.5 py-0.5"
-      title="สร้างโดยระบบ ยังไม่ได้รับการยืนยันโดยผู้เชี่ยวชาญ"
-    >
-      ⚙ เชื่อมโยงอัตโนมัติ{how && ` (${how})`}
-    </span>
-  );
-}
 
 const PER_GROUP = 25;
 const PER_PAGE = 100;
@@ -150,11 +94,9 @@ export default async function ActPage({
 
   return (
     <div className="space-y-8">
-      <nav className="text-sm text-slate-500">
-        <Link href="/" className="hover:underline">
-          หน้าแรก
-        </Link>{" "}
-        /{" "}
+      <nav className="text-sm text-slate-500 flex flex-wrap items-center gap-x-1">
+        <BackLink fallbackHref="/acts" />
+        <span className="mx-1">·</span>
         <Link href="/acts" className="hover:underline">
           กฎหมายแม่บท
         </Link>{" "}
@@ -265,6 +207,24 @@ export default async function ActPage({
         </p>
       )}
 
+      {!filterType && groups.size > 1 && (
+        <nav className="sticky top-0 z-10 -mx-4 border-b border-slate-200 bg-slate-50/95 px-4 py-2 backdrop-blur">
+          <ul className="flex flex-wrap gap-2 text-sm">
+            {orderedKeys.filter((k) => groups.has(k)).map((key) => (
+              <li key={key}>
+                <a
+                  href={`#group-${key}`}
+                  className="inline-block rounded-full border border-slate-300 bg-white px-3 py-1 text-slate-700 hover:border-amber-400 hover:text-amber-800"
+                >
+                  {GROUP_LABELS[key] ?? key}{" "}
+                  <span className="text-slate-400">({(countByType.get(key) ?? 0).toLocaleString("th-TH")})</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
+
       {filterType && (
         <p className="text-sm">
           <Link href={`/act/${act.id}`} className="text-amber-700 hover:underline">
@@ -278,7 +238,7 @@ export default async function ActPage({
         const total = countByType.get(key) ?? list.length;
         const shownAll = filterType ? false : total <= PER_GROUP;
         return (
-          <section key={key}>
+          <section key={key} id={`group-${key}`} className="scroll-mt-16">
             <h2 className="text-lg font-bold mb-3 flex items-baseline gap-2">
               {GROUP_LABELS[key] ?? key}
               <span className="text-sm font-normal text-slate-400">
@@ -301,7 +261,9 @@ export default async function ActPage({
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-1.5 min-w-0">
                       <div className="font-medium leading-snug">
-                        {e.title}
+                        <Link href={`/entry/${e.id}`} className="hover:text-amber-700 hover:underline">
+                          {e.title}
+                        </Link>
                         {e.isAmendment && (
                           <span className="ml-2 inline-block rounded bg-amber-100 text-amber-800 text-xs px-1.5 py-0.5 align-middle">
                             ฉบับแก้ไข
@@ -315,44 +277,51 @@ export default async function ActPage({
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <VerifyBadge status={e.verifyStatus} source={e.linkSource} />
-                        {e.verifyStatus !== "verified" && (
-                          <form action={confirmLink}>
-                            <input type="hidden" name="entryId" value={e.id} />
-                            <button className="text-xs text-green-700 hover:underline" title="ยืนยันว่าการเชื่อมโยงนี้ถูกต้อง">
-                              ✓ ยืนยันว่าถูกต้อง
-                            </button>
-                          </form>
-                        )}
                         <details className="text-xs">
-                          <summary className="cursor-pointer text-red-700 hover:underline list-none">
-                            ⚠ แจ้งว่าไม่ถูกต้อง
+                          <summary className="cursor-pointer text-slate-400 hover:text-slate-600 list-none">
+                            ตรวจสอบความถูกต้อง
                           </summary>
-                          <form
-                            action={disputeLink}
-                            className="mt-2 space-y-2 rounded border border-red-200 bg-red-50 p-3 w-72"
-                          >
-                            <input type="hidden" name="entryId" value={e.id} />
-                            <textarea
-                              name="reason"
-                              required
-                              placeholder="เหตุผล เช่น ออกตามกฎหมายฉบับอื่น..."
-                              className="w-full rounded border border-slate-300 p-2 text-sm"
-                              rows={2}
-                            />
-                            <input
-                              name="correctAct"
-                              placeholder="กฎหมายแม่บทที่ถูกต้อง (ถ้าทราบ)"
-                              className="w-full rounded border border-slate-300 p-2 text-sm"
-                            />
-                            <input
-                              name="contributor"
-                              placeholder="ชื่อ/สังกัด (ไม่บังคับ)"
-                              className="w-full rounded border border-slate-300 p-2 text-sm"
-                            />
-                            <button className="rounded bg-red-700 text-white px-3 py-1.5">
-                              ส่งข้อโต้แย้ง
-                            </button>
-                          </form>
+                          <div className="mt-2 flex flex-wrap items-start gap-3">
+                            {e.verifyStatus !== "verified" && (
+                              <form action={confirmLink}>
+                                <input type="hidden" name="entryId" value={e.id} />
+                                <button className="text-xs text-green-700 hover:underline" title="ยืนยันว่าการเชื่อมโยงนี้ถูกต้อง">
+                                  ✓ ยืนยันว่าถูกต้อง
+                                </button>
+                              </form>
+                            )}
+                            <details className="text-xs">
+                              <summary className="cursor-pointer text-red-700 hover:underline list-none">
+                                ⚠ แจ้งว่าไม่ถูกต้อง
+                              </summary>
+                              <form
+                                action={disputeLink}
+                                className="mt-2 space-y-2 rounded border border-red-200 bg-red-50 p-3 w-72"
+                              >
+                                <input type="hidden" name="entryId" value={e.id} />
+                                <textarea
+                                  name="reason"
+                                  required
+                                  placeholder="เหตุผล เช่น ออกตามกฎหมายฉบับอื่น..."
+                                  className="w-full rounded border border-slate-300 p-2 text-sm"
+                                  rows={2}
+                                />
+                                <input
+                                  name="correctAct"
+                                  placeholder="กฎหมายแม่บทที่ถูกต้อง (ถ้าทราบ)"
+                                  className="w-full rounded border border-slate-300 p-2 text-sm"
+                                />
+                                <input
+                                  name="contributor"
+                                  placeholder="ชื่อ/สังกัด (ไม่บังคับ)"
+                                  className="w-full rounded border border-slate-300 p-2 text-sm"
+                                />
+                                <button className="rounded bg-red-700 text-white px-3 py-1.5">
+                                  ส่งข้อโต้แย้ง
+                                </button>
+                              </form>
+                            </details>
+                          </div>
                         </details>
                       </div>
                     </div>

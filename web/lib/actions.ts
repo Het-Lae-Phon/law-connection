@@ -31,6 +31,7 @@ export async function confirmLink(formData: FormData) {
     }),
   ]);
   revalidatePath(`/act/${entry.actId}`);
+  revalidatePath(`/entry/${entryId}`);
 }
 
 // ⚠ "link is wrong" — flags immediately, queued for moderator resolution
@@ -54,6 +55,7 @@ export async function disputeLink(formData: FormData) {
     prisma.gazetteEntry.update({ where: { id: entryId }, data: { verifyStatus: "disputed" } }),
   ]);
   if (entry.actId) revalidatePath(`/act/${entry.actId}`);
+  revalidatePath(`/entry/${entryId}`);
   revalidatePath("/community");
 }
 

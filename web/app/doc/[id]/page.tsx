@@ -26,18 +26,15 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
   return (
     <div className="space-y-6">
       <nav className="text-sm text-slate-500">
-        <Link href="/" className="hover:underline">
-          หน้าแรก
-        </Link>{" "}
         {entry.act && (
           <>
-            /{" "}
             <Link href={`/act/${entry.act.id}`} className="hover:underline">
               {entry.act.shortName}
             </Link>{" "}
+            /{" "}
           </>
         )}
-        / <span className="text-slate-700">สำเนาอ้างอิง</span>
+        <span className="text-slate-700">สำเนาอ้างอิง</span>
       </nav>
 
       <header className="space-y-2">

@@ -90,14 +90,12 @@ export default async function Home() {
         <ul className="divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
           {recentLaws.map((e) => (
             <li key={e.id} className="p-4 space-y-1">
-              <a
-                href={e.pdfUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                href={`/entry/${e.id}`}
                 className="font-medium hover:text-amber-700 leading-snug block"
               >
                 {e.title}
-              </a>
+              </Link>
               <div className="text-sm text-slate-500 flex flex-wrap gap-x-3">
                 <span>{formatThaiDate(e.publishedAt)}</span>
                 <span>
