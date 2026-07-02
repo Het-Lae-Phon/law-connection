@@ -61,10 +61,19 @@ model GazetteEntry {
   linkSource     String? // how actId was derived: "title" | "pdf" | "community"
   verifyStatus   String   @default("machine") // machine | verified | disputed
   contributions  Contribution[]
+  documentText   DocumentText?
 
   @@index([actId])
   @@index([instrumentType])
   @@index([publishedAt])
+}
+
+// Full text for entries that have no public document URL (Krisdika library docs).
+// Kept in a separate table so the main entry table stays lean for list queries.
+model DocumentText {
+  entryId Int          @id
+  entry   GazetteEntry @relation(fields: [entryId], references: [id])
+  text    String
 }
 
 // Community input, Wikipedia-style: every change is recorded, nothing is silently

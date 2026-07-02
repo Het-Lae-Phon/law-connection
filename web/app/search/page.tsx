@@ -121,7 +121,7 @@ export default async function SearchPage({
               <li key={e.id} className="p-4 space-y-1">
                 <div className="flex items-start justify-between gap-4">
                   <div className="font-medium leading-snug">{e.title}</div>
-                  {e.pdfUrl.startsWith("http") && (
+                  {e.pdfUrl.startsWith("http") ? (
                     <a
                       href={e.pdfUrl}
                       target="_blank"
@@ -130,6 +130,13 @@ export default async function SearchPage({
                     >
                       PDF ↗
                     </a>
+                  ) : (
+                    <Link
+                      href={`/doc/${e.id}`}
+                      className="shrink-0 rounded border border-amber-300 bg-amber-50 px-3 py-1 text-sm hover:bg-amber-100"
+                    >
+                      อ่านฉบับเต็ม
+                    </Link>
                   )}
                 </div>
                 <div className="text-sm text-slate-500 flex flex-wrap gap-x-3">

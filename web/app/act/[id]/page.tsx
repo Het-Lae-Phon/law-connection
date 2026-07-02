@@ -336,7 +336,7 @@ export default async function ActPage({
                         </details>
                       </div>
                     </div>
-                    {e.pdfUrl.startsWith("http") && (
+                    {e.pdfUrl.startsWith("http") ? (
                       <a
                         href={e.pdfUrl}
                         target="_blank"
@@ -345,6 +345,13 @@ export default async function ActPage({
                       >
                         {e.pdfUrl.toLowerCase().endsWith(".pdf") ? "PDF" : "เอกสาร"} ↗
                       </a>
+                    ) : (
+                      <Link
+                        href={`/doc/${e.id}`}
+                        className="shrink-0 rounded border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm hover:bg-amber-100"
+                      >
+                        อ่านฉบับเต็ม
+                      </Link>
                     )}
                   </div>
                 </li>

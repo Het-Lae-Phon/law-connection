@@ -65,7 +65,10 @@ See CONTRIBUTING.md — including the auth caveats to fix before public deployme
   instruments (SEC, ministries) going back decades. Because it is full text, parent-act citations are
   extracted directly from preambles — no OCR needed. Import via
   `scripts/process-thailaw.py` → `scripts/import-thailaw.ts` (dedupes against gazette entries by
-  normalized title; entries carry `origin: "krisdika"`).
+  normalized title; entries carry `origin: "krisdika"`). The dataset has no per-document URLs, so
+  the full text itself is stored (`scripts/backfill-doctext.py` → `DocumentText` table, ~800MB in
+  SQLite) and served at `/doc/[id]` — entries without an external link show an
+  "อ่านฉบับเต็ม" button instead of a PDF link.
 
 ## Known limitations / roadmap
 
