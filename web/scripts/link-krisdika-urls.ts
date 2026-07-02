@@ -8,13 +8,18 @@
  * that maps to multiple different URLs is skipped — wrong reference is worse
  * than none). Act matches are also seeded as authoritative Sources.
  *
- * NOTE: the CSVs carry the old krisdika.go.th/librarian/get?sysid=N URLs, which
- * are dead (site moved to ocs.go.th). The sysid still resolves in the current
- * OCS search system — human-verified on 2026-07-02 — so URLs are rewritten to:
- *   https://searchlaw.ocs.go.th/council-of-state/#/public/doc/<sysid>
- * The old law?lawcode= listing URLs have no known equivalent and are skipped.
+ * ⚠️ DISABLED — DO NOT RUN until OCS deep-linking is solved.
  *
- * Usage: npx tsx scripts/link-krisdika-urls.ts
+ * History: the CSVs carry the old krisdika.go.th/librarian/get?sysid=N URLs,
+ * which are dead (site moved to ocs.go.th). We then tried
+ *   https://searchlaw.ocs.go.th/council-of-state/#/public/doc/<sysid>
+ * but the OCS app AES-encrypts its route parameters, so plain-sysid links fail
+ * with PDL_CIPHER_EXCEPTION (confirmed in production on 2026-07-02). There is
+ * currently NO stable public deep-link scheme for OCS documents. Entries rely
+ * on the built-in full-text reader (/doc/[id]) instead; revisit if OCS ships a
+ * public API or shareable permalinks.
+ *
+ * Usage: npx tsx scripts/link-krisdika-urls.ts --i-know-links-are-broken
  */
 import { PrismaClient } from "@prisma/client";
 import * as fs from "fs";
@@ -58,6 +63,13 @@ function parseCsv(text: string): string[][] {
 }
 
 async function main() {
+  if (!process.argv.includes("--i-know-links-are-broken")) {
+    console.error(
+      "refusing to run: searchlaw.ocs.go.th deep links fail with PDL_CIPHER_EXCEPTION " +
+        "(route params are encrypted). See the header comment of this script."
+    );
+    process.exit(1);
+  }
   // --- sub-law items: title -> url (unambiguous only)
   const itemRows = parseCsv(fs.readFileSync(path.join(DATA, "law_item_urls.csv"), "utf8"));
   const itemHeader = itemRows[0];

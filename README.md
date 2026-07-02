@@ -68,7 +68,10 @@ See CONTRIBUTING.md — including the auth caveats to fix before public deployme
   normalized title; entries carry `origin: "krisdika"`). The dataset has no per-document URLs, so
   the full text itself is stored (`scripts/backfill-doctext.py` → `DocumentText` table, ~800MB in
   SQLite) and served at `/doc/[id]` — entries without an external link show an
-  "อ่านฉบับเต็ม" button instead of a PDF link.
+  "อ่านฉบับเต็ม" button instead of a PDF link. External deep links to OCS/Krisdika were attempted
+  and rolled back twice: the old `krisdika.go.th/librarian` scheme is dead, and the current
+  searchlaw.ocs.go.th app encrypts its route parameters (plain document-id links fail with
+  PDL_CIPHER_EXCEPTION). Revisit when OCS provides a public API or shareable permalinks.
 
 ## Known limitations / roadmap
 
