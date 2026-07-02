@@ -3,6 +3,9 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { formatThaiDate } from "@/lib/format";
 import { confirmLink, disputeLink, addComment, suggestEntry, suggestSource } from "@/lib/actions";
+import { EntryActions } from "@/app/components/entry-actions";
+import { CopyCite } from "@/app/components/copy-cite";
+import { buildCitation } from "@/lib/cite";
 
 // Thai government domains get an "official" badge on source links
 function isGovDomain(url: string): boolean {
@@ -111,7 +114,7 @@ export default async function ActPage({
   });
   if (!act) notFound();
 
-  const [typeCounts, subCount, verifiedCount] = await Promise.all([
+  const [typeCounts, subCount, verifiedCount, primaryEntry] = await Promise.all([
     prisma.gazetteEntry.groupBy({
       by: ["instrumentType"],
       where: { actId },
@@ -119,6 +122,10 @@ export default async function ActPage({
     }),
     prisma.gazetteEntry.count({ where: { actId, isPrimary: false } }),
     prisma.gazetteEntry.count({ where: { actId, verifyStatus: "verified" } }),
+    prisma.gazetteEntry.findFirst({
+      where: { actId, isPrimary: true, isAmendment: false, volume: { gt: 0 } },
+      orderBy: { publishedAt: "asc" },
+    }),
   ]);
   const countByType = new Map(typeCounts.map((t) => [t.instrumentType ?? "อื่น ๆ", t._count]));
 
@@ -162,6 +169,19 @@ export default async function ActPage({
           {verifiedCount > 0 && ` · ยืนยันโดยชุมชนแล้ว ${verifiedCount.toLocaleString("th-TH")} ฉบับ`}{" "}
           (จากราชกิจจานุเบกษาและห้องสมุดกฎหมายกฤษฎีกา)
         </p>
+        <div className="flex flex-wrap gap-2 pt-1">
+          <CopyCite citation={primaryEntry ? buildCitation(primaryEntry) : act.fullName} />
+          {primaryEntry?.pdfUrl.startsWith("http") && (
+            <a
+              href={primaryEntry.pdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded bg-slate-900 text-white px-3 py-1.5 text-sm hover:bg-slate-700"
+            >
+              ต้นฉบับในราชกิจจานุเบกษา ↗
+            </a>
+          )}
+        </div>
       </header>
 
       <section className="rounded-lg border border-slate-200 bg-white p-5 space-y-3">
@@ -336,36 +356,7 @@ export default async function ActPage({
                         </details>
                       </div>
                     </div>
-                    <div className="shrink-0 flex flex-col items-stretch gap-1.5">
-                      {e.pdfUrl.startsWith("http") ? (
-                        <a
-                          href={e.pdfUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="rounded border border-slate-300 px-3 py-1.5 text-sm text-center hover:bg-slate-100"
-                        >
-                          {e.pdfUrl.toLowerCase().endsWith(".pdf") ? "PDF" : "เอกสาร"} ↗
-                        </a>
-                      ) : (
-                        <Link
-                          href={`/doc/${e.id}`}
-                          className="rounded border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm text-center hover:bg-amber-100"
-                        >
-                          อ่านฉบับเต็ม
-                        </Link>
-                      )}
-                      {e.sourceUrl && (
-                        <a
-                          href={e.sourceUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="rounded border border-slate-300 px-3 py-1.5 text-sm text-center hover:bg-slate-100"
-                          title="ต้นฉบับที่ห้องสมุดกฎหมาย สำนักงานคณะกรรมการกฤษฎีกา"
-                        >
-                          กฤษฎีกา ↗
-                        </a>
-                      )}
-                    </div>
+                    <EntryActions entry={e} />
                   </div>
                 </li>
               ))}

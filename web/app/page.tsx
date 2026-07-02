@@ -26,11 +26,11 @@ export default async function Home() {
     <div className="space-y-10">
       <section className="text-center space-y-4 py-6">
         <h1 className="text-3xl font-bold">
-          ค้นกฎหมายพร้อม<span className="text-amber-600">กฎหมายลำดับรอง</span>ในที่เดียว
+          อ้างอิงกฎหมายให้ถูกฉบับ แล้ว<span className="text-amber-600">ไปที่ต้นฉบับ</span>
         </h1>
         <p className="text-slate-600 max-w-2xl mx-auto">
-          เชื่อมโยงกฎกระทรวง ประกาศ ระเบียบ และข้อบังคับ เข้ากับพระราชบัญญัติแม่บทโดยอัตโนมัติ
-          จากข้อมูลราชกิจจานุเบกษา
+          ดัชนีกฎหมายไทยและกฎหมายลำดับรองที่เชื่อมโยงถึงกัน — ค้นหา คัดลอกการอ้างอิงที่ถูกต้อง
+          และตามลิงก์ไปยังต้นฉบับในราชกิจจานุเบกษาหรือหน่วยงานผู้ออกกฎหมาย
         </p>
         <form action="/search" className="flex max-w-xl mx-auto gap-2">
           <input

@@ -4,6 +4,16 @@
 
 A prototype Thai legal database that automatically links subordinate legislation to its parent act, built from Royal Gazette (ราชกิจจานุเบกษา) open data.
 
+## Product scope — two purposes only
+
+1. **Reference the relevant law** — find an act and every instrument issued under it, and copy a
+   correct legal citation (ชื่อเต็ม + ราชกิจจานุเบกษา เล่ม/ตอน/หน้า/วันที่).
+2. **Guide to the original source** — every entry leads to its authoritative original: the gazette
+   PDF, the regulator's page, or (when no public link exists) the formal gazette citation plus
+   where to look. Our stored copies are convenience fallbacks, always clearly labeled as such.
+
+Features are judged against these two purposes; anything else is out of scope.
+
 ## How it works
 
 ```
