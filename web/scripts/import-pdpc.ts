@@ -10,6 +10,7 @@
  * Usage: npx tsx scripts/import-pdpc.ts
  */
 import { PrismaClient } from "@prisma/client";
+import { extractPdfDate } from "./pdf-date";
 
 const prisma = new PrismaClient();
 const LIST_URL = "https://www.pdpc.or.th/category/pdpc-law/announce/announcement-pdpc/";
@@ -17,11 +18,6 @@ const UA = { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" };
 
 // regulation-looking titles only (skip privacy notices, procurement posts, nav links)
 const TITLE_PREFIXES = ["ประกาศคณะกรรมการคุ้มครองข้อมูลส่วนบุคคล", "ระเบียบคณะกรรมการคุ้มครองข้อมูลส่วนบุคคล", "คำสั่ง"];
-
-const THAI_MONTHS: Record<string, number> = {
-  "มกราคม": 1, "กุมภาพันธ์": 2, "มีนาคม": 3, "เมษายน": 4, "พฤษภาคม": 5, "มิถุนายน": 6,
-  "กรกฎาคม": 7, "สิงหาคม": 8, "กันยายน": 9, "ตุลาคม": 10, "พฤศจิกายน": 11, "ธันวาคม": 12,
-};
 
 function compact(s: string): string {
   return s.replace(/ํา/g, "ำ").replace(/\s+/g, "");
@@ -67,21 +63,16 @@ async function collectPosts(): Promise<Post[]> {
   return [...posts.values()];
 }
 
-// From a post page: full title (h1 can be truncated in listing), Thai date, first PDF link.
-async function readPost(p: Post): Promise<{ title: string; date: Date | null; pdfUrl: string | null }> {
+// From a post page: full title (h1 can be truncated in listing) and first PDF link.
+// The date is NOT taken from the page — WordPress pages contain unrelated
+// boilerplate dates. The trustworthy date is the promulgation line inside the
+// PDF ("ประกาศ ณ วันที่ ..."), extracted afterwards via extractPdfDate.
+async function readPost(p: Post): Promise<{ title: string; pdfUrl: string | null }> {
   const html = await fetchText(p.postUrl);
   const h1 = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/);
   const title = h1 ? stripTags(h1[1]) : p.title;
-  const dm = stripTags(html).match(/(\d{1,2})\s+(มกราคม|กุมภาพันธ์|มีนาคม|เมษายน|พฤษภาคม|มิถุนายน|กรกฎาคม|สิงหาคม|กันยายน|ตุลาคม|พฤศจิกายน|ธันวาคม)\s+(\d{4})/);
-  let date: Date | null = null;
-  if (dm) {
-    let year = parseInt(dm[3], 10);
-    if (year > 2400) year -= 543;
-    date = new Date(Date.UTC(year, THAI_MONTHS[dm[2]] - 1, parseInt(dm[1], 10)));
-    if (isNaN(date.getTime())) date = null;
-  }
   const pdf = html.match(/href="(https?:\/\/[^"]+\.pdf)"/i);
-  return { title, date, pdfUrl: pdf ? pdf[1] : null };
+  return { title, pdfUrl: pdf ? pdf[1] : null };
 }
 
 async function main() {
@@ -117,10 +108,11 @@ async function main() {
     seenTitles.add(key);
     seenUrls.add(url);
     const instrumentType = title.startsWith("ระเบียบ") ? "ระเบียบ" : title.startsWith("คำสั่ง") ? "คำสั่ง" : "ประกาศ";
+    const date = detail.pdfUrl ? await extractPdfDate(detail.pdfUrl) : null;
     await prisma.gazetteEntry.create({
       data: {
         title,
-        publishedAt: detail.date,
+        publishedAt: date,
         volume: 0,
         issue: "",
         category: "",
