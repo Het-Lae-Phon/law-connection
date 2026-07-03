@@ -194,7 +194,7 @@
   }
 
   const dx = 34;  // vertical gap per word row
-  const dy = 400; // horizontal gap per depth
+  const dy = 540; // horizontal gap per depth — leaves room for the curves
   const marginLeft = 40;
 
   const root = d3.hierarchy(window.WORD_TREE_DATA);
@@ -217,14 +217,17 @@
     .on("zoom", (e) => gRoot.attr("transform", e.transform));
   svg.call(zoom);
 
-  // branch starts at the right edge of the parent word-chip
+  // branch starts at the right edge of the parent word-chip;
+  // control points reach deep toward each end for an organic S-swoop,
+  // with a minimum reach so short spans still bow instead of going straight
+  const BEND = 0.85;
   function limbPath(d) {
     const sx = d.source.y + (d.source.chipW || 0) + 4;
     const sy = d.source.x;
     const tx = d.target.y - 4;
     const ty = d.target.x;
-    const mx = (sx + tx) / 2;
-    return `M${sx},${sy}C${mx},${sy} ${mx},${ty} ${tx},${ty}`;
+    const reach = Math.max((tx - sx) * BEND, 70);
+    return `M${sx},${sy}C${sx + reach},${sy} ${tx - reach},${ty} ${tx},${ty}`;
   }
 
   const panel = document.getElementById("panel");
