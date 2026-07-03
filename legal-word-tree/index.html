@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Legal Word Tree — สิทธิความเป็นส่วนตัว · PDPA · TDPG4.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --c-root: #7c3aed;
+    --c-constitution: #b45309;
+    --c-act: #0f766e;
+    --c-theme: #1d4ed8;
+    --c-section: #0369a1;
+    --c-subreg: #334155;
+    --c-decree: #9d174d;
+    --c-guideline: #15803d;
+    --c-pending: #b91c1c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Sarabun", system-ui, sans-serif;
+    background: #f8fafc;
+    color: #0f172a;
+  }
+  header {
+    padding: 16px 24px 12px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #fff;
+  }
+  header h1 { margin: 0; font-size: 20px; }
+  header p { margin: 4px 0 0; font-size: 13px; color: #64748b; }
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 12px;
+    padding: 8px 24px; font-size: 12px; color: #475569;
+    background: #fff; border-bottom: 1px solid #e2e8f0;
+  }
+  .legend span::before {
+    content: ""; display: inline-block; width: 10px; height: 10px;
+    border-radius: 50%; margin-right: 5px; background: var(--dot);
+  }
+  #tree-wrap { width: 100%; overflow: auto; }
+  svg { display: block; }
+  .link-path { fill: none; stroke: #cbd5e1; stroke-width: 1.5px; }
+  .node circle { stroke-width: 2px; cursor: pointer; }
+  .node text { font: 13px "Sarabun", sans-serif; cursor: pointer; }
+  .node text.has-children { font-weight: 700; }
+  #panel {
+    position: fixed; right: 16px; top: 120px; width: 340px; max-height: 70vh;
+    overflow: auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, .08); padding: 16px; display: none;
+  }
+  #panel h2 { margin: 0 0 8px; font-size: 15px; }
+  #panel p { margin: 0 0 10px; font-size: 13px; line-height: 1.6; color: #334155; }
+  #panel a {
+    display: block; font-size: 13px; color: #1d4ed8; margin: 4px 0;
+    text-decoration: none;
+  }
+  #panel a:hover { text-decoration: underline; }
+  #panel .close {
+    float: right; border: 0; background: none; font-size: 16px;
+    cursor: pointer; color: #94a3b8;
+  }
+  footer { padding: 12px 24px 24px; font-size: 12px; color: #94a3b8; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Legal Word Tree — จากสิทธิความเป็นส่วนตัวสู่กฎหมายลำดับรอง PDPA</h1>
+  <p>
+    รัฐธรรมนูญ พ.ศ. 2560 มาตรา 32 → พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 → กฎหมายลำดับรอง 27 ฉบับ ·
+    โครงสร้างกิ่งตามผังหัวข้อ TDPG4.0 (คณะนิติศาสตร์ จุฬาฯ) · คลิกวงกลมเพื่อพับ/กาง คลิกชื่อเพื่อดูรายละเอียดและลิงก์
+  </p>
+</header>
+<div class="legend">
+  <span style="--dot: var(--c-root)">สิทธิพื้นฐาน</span>
+  <span style="--dot: var(--c-constitution)">รัฐธรรมนูญ</span>
+  <span style="--dot: var(--c-act)">พระราชบัญญัติ</span>
+  <span style="--dot: var(--c-theme)">หมวดหัวข้อ (TDPG4.0)</span>
+  <span style="--dot: var(--c-section)">มาตราสำคัญ</span>
+  <span style="--dot: var(--c-decree)">พระราชกฤษฎีกา</span>
+  <span style="--dot: var(--c-subreg)">ประกาศ/ระเบียบ</span>
+  <span style="--dot: var(--c-guideline)">แนวปฏิบัติ TDPG4.0</span>
+  <span style="--dot: var(--c-pending)">รอตรวจสอบ</span>
+</div>
+<div id="tree-wrap"><svg id="tree"></svg></div>
+<div id="panel">
+  <button class="close" aria-label="ปิด">✕</button>
+  <h2 id="panel-title"></h2>
+  <p id="panel-detail"></p>
+  <div id="panel-links"></div>
+</div>
+<footer>
+  แหล่งข้อมูล: law-connection dataset (Act 299) · TDPG4.0 — Thailand Data Protection Guidelines 4.0,
+  คณะนิติศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย (CC BY 3.0 TH) · ราชกิจจานุเบกษา · เว็บไซต์ สคส. (PDPC)
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="data/word-tree-data.js"></script>
+<script>
+(function () {
+  const COLORS = {
+    root: "var(--c-root)",
+    constitution: "var(--c-constitution)",
+    act: "var(--c-act)",
+    theme: "var(--c-theme)",
+    section: "var(--c-section)",
+    subreg: "var(--c-subreg)",
+    decree: "var(--c-decree)",
+    guideline: "var(--c-guideline)",
+    pending: "var(--c-pending)",
+  };
+  const dx = 30; // vertical gap per node
+  const dy = 360; // horizontal gap per depth (Thai labels are long)
+  const marginLeft = 160;
+
+  const root = d3.hierarchy(window.WORD_TREE_DATA);
+  root.descendants().forEach((d, i) => {
+    d.id = i;
+    d._children = d.children;
+    // start with themes expanded, deeper levels collapsed
+    if (d.depth >= 3) d.children = null;
+  });
+
+  const svg = d3.select("#tree");
+  const gLink = svg.append("g");
+  const gNode = svg.append("g");
+  const tree = d3.tree().nodeSize([dx, dy]);
+  const diagonal = d3.linkHorizontal().x((d) => d.y).y((d) => d.x);
+
+  const panel = document.getElementById("panel");
+  document.querySelector("#panel .close").onclick = () => (panel.style.display = "none");
+
+  function showPanel(d) {
+    document.getElementById("panel-title").textContent = d.data.name;
+    document.getElementById("panel-detail").textContent = d.data.detail || "";
+    const linksEl = document.getElementById("panel-links");
+    linksEl.innerHTML = "";
+    (d.data.links || []).forEach((l) => {
+      const a = document.createElement("a");
+      a.href = l.url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = "↗ " + l.label;
+      linksEl.appendChild(a);
+    });
+    panel.style.display = "block";
+  }
+
+  function update(source) {
+    tree(root);
+    let top = Infinity, bottom = -Infinity;
+    root.each((d) => {
+      if (d.x < top) top = d.x;
+      if (d.x > bottom) bottom = d.x;
+    });
+    const height = bottom - top + dx * 4;
+    const width = (root.height + 1) * dy + marginLeft;
+    svg
+      .attr("width", width)
+      .attr("height", height)
+      .attr("viewBox", [-marginLeft, top - dx * 2, width, height]);
+
+    const nodes = root.descendants();
+    const links = root.links();
+
+    const node = gNode.selectAll("g.node").data(nodes, (d) => d.id);
+
+    const nodeEnter = node
+      .enter()
+      .append("g")
+      .attr("class", "node")
+      .attr("transform", () => `translate(${source.y0 ?? source.y},${source.x0 ?? source.x})`);
+
+    nodeEnter
+      .append("circle")
+      .attr("r", 6)
+      .on("click", (event, d) => {
+        d.children = d.children ? null : d._children;
+        update(d);
+      });
+
+    nodeEnter
+      .append("text")
+      .attr("dy", "0.32em")
+      .on("click", (event, d) => showPanel(d));
+
+    const nodeAll = nodeEnter.merge(node);
+    nodeAll
+      .transition()
+      .duration(250)
+      .attr("transform", (d) => `translate(${d.y},${d.x})`);
+    nodeAll
+      .select("circle")
+      .attr("fill", (d) => (d._children && !d.children ? COLORS[d.data.type] : "#fff"))
+      .attr("stroke", (d) => COLORS[d.data.type]);
+    nodeAll
+      .select("text")
+      .attr("class", (d) => (d._children ? "has-children" : ""))
+      .attr("x", (d) => (d._children ? -12 : 12))
+      .attr("text-anchor", (d) => (d._children ? "end" : "start"))
+      .attr("fill", (d) => COLORS[d.data.type])
+      .text((d) => d.data.name);
+
+    node.exit().remove();
+
+    const link = gLink.selectAll("path.link-path").data(links, (d) => d.target.id);
+    link
+      .enter()
+      .append("path")
+      .attr("class", "link-path")
+      .merge(link)
+      .transition()
+      .duration(250)
+      .attr("d", diagonal);
+    link.exit().remove();
+
+    root.each((d) => {
+      d.x0 = d.x;
+      d.y0 = d.y;
+    });
+  }
+
+  root.x0 = 0;
+  root.y0 = 0;
+  update(root);
+})();
+</script>
+</body>
+</html>
