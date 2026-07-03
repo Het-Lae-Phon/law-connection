@@ -19,6 +19,8 @@
     --c-pending: #b91c1c;
     --c-chapter: #c2410c;
     --c-provision: #57534e;
+    --c-paragraph: #64748b;
+    --c-item: #94a3b8;
   }
   * { box-sizing: border-box; }
   body {
@@ -47,7 +49,7 @@
   svg { display: block; }
   .link-path { fill: none; stroke: #cbd5e1; stroke-width: 1.5px; }
   .node circle { stroke-width: 2px; cursor: pointer; }
-  .node text { font: 13px "Sarabun", sans-serif; cursor: pointer; }
+  .node text { font: 12px "Sarabun", sans-serif; cursor: pointer; }
   .node text.has-children { font-weight: 700; }
   #panel {
     position: fixed; right: 16px; top: 120px; width: 340px; max-height: 70vh;
@@ -55,7 +57,7 @@
     box-shadow: 0 8px 24px rgba(15, 23, 42, .08); padding: 16px; display: none;
   }
   #panel h2 { margin: 0 0 8px; font-size: 15px; }
-  #panel p { margin: 0 0 10px; font-size: 13px; line-height: 1.6; color: #334155; }
+  #panel p { margin: 0 0 10px; font-size: 13px; line-height: 1.6; color: #334155; white-space: pre-line; }
   #panel a {
     display: block; font-size: 13px; color: #1d4ed8; margin: 4px 0;
     text-decoration: none;
@@ -72,18 +74,19 @@
 <header>
   <h1>Legal Word Tree — จากสิทธิความเป็นส่วนตัวสู่กฎหมายลำดับรอง PDPA</h1>
   <p>
-    รัฐธรรมนูญ พ.ศ. 2560 มาตรา 32 → พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 → กฎหมายลำดับรอง 27 ฉบับ ·
-    โครงสร้างกิ่งตามผังหัวข้อ TDPG4.0 (คณะนิติศาสตร์ จุฬาฯ) · คลิกวงกลมเพื่อพับ/กาง คลิกชื่อเพื่อดูรายละเอียดและลิงก์
+    รัฐธรรมนูญ พ.ศ. 2560 มาตรา 32 → พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 → หมวด/ส่วน → มาตรา → วรรค ·
+    แนวปฏิบัติ TDPG4.0 (คณะนิติศาสตร์ จุฬาฯ) และกฎหมายลำดับรอง 27 ฉบับ ผูกกับมาตราที่เกี่ยวข้อง ·
+    คลิกวงกลมเพื่อพับ/กาง คลิกข้อความเพื่อดูตัวบทเต็มและลิงก์
   </p>
 </header>
 <div class="legend">
   <span style="--dot: var(--c-root)">สิทธิพื้นฐาน</span>
   <span style="--dot: var(--c-constitution)">รัฐธรรมนูญ</span>
   <span style="--dot: var(--c-act)">พระราชบัญญัติ</span>
-  <span style="--dot: var(--c-theme)">หมวดหัวข้อ (TDPG4.0)</span>
-  <span style="--dot: var(--c-section)">มาตราสำคัญ</span>
   <span style="--dot: var(--c-chapter)">หมวด/ส่วน</span>
   <span style="--dot: var(--c-provision)">มาตรา</span>
+  <span style="--dot: var(--c-paragraph)">วรรค</span>
+  <span style="--dot: var(--c-item)">อนุมาตรา/นิยาม</span>
   <span style="--dot: var(--c-decree)">พระราชกฤษฎีกา</span>
   <span style="--dot: var(--c-subreg)">ประกาศ/ระเบียบ</span>
   <span style="--dot: var(--c-guideline)">แนวปฏิบัติ TDPG4.0</span>
@@ -104,6 +107,7 @@
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="data/word-tree-data.js"></script>
 <script src="data/act-sections-data.js"></script>
+<script src="data/law-map.js"></script>
 <script>
 (function () {
   const COLORS = {
@@ -118,11 +122,13 @@
     pending: "var(--c-pending)",
     chapter: "var(--c-chapter)",
     provision: "var(--c-provision)",
+    paragraph: "var(--c-paragraph)",
+    item: "var(--c-item)",
   };
 
-  // graft generated per-มาตรา data (data/act-sections-data.js) onto the
-  // hand-curated tree: act structure + by-type listing under the PDPA node,
-  // มาตรา nodes under each royal decree
+  // assemble the tree: the act's own structure (generated) is the main
+  // skeleton; TDPG4.0 chapters and sub-regulations (curated map) attach to
+  // the มาตรา they interpret / are issued under
   function findById(node, id) {
     if (node.id === id) return node;
     for (const c of node.children || []) {
@@ -134,16 +140,41 @@
   if (window.ACT_SECTIONS) {
     const pdpa = findById(window.WORD_TREE_DATA, "pdpa-act");
     if (pdpa) {
-      pdpa.children.unshift(window.ACT_SECTIONS.actStructure);
-      pdpa.children.push(window.ACT_SECTIONS.byType);
+      pdpa.children = [
+        ...window.ACT_SECTIONS.actChapters,
+        ...pdpa.children,
+        window.ACT_SECTIONS.byType,
+      ];
     }
+    if (window.LAW_MAP) {
+      for (const [sid, codes] of Object.entries(window.LAW_MAP.sectionTdpg)) {
+        const s = findById(window.WORD_TREE_DATA, sid);
+        if (!s) continue;
+        for (const code of codes) {
+          const ch = window.LAW_MAP.tdpgChapters[code];
+          (s.children ??= []).push({
+            name: `TDPG4.0-${code} ${ch.name}`,
+            type: "guideline",
+            detail: `แนวปฏิบัติ TDPG4.0 บท ${code} (${ch.name}) ตีความและวางแนวทางปฏิบัติสำหรับมาตรานี้`,
+            links: [{ label: `TDPG4.0-${code} ${ch.name}`, url: ch.url }],
+          });
+        }
+      }
+      for (const [sid, keys] of Object.entries(window.LAW_MAP.sectionSubregs)) {
+        const s = findById(window.WORD_TREE_DATA, sid);
+        if (!s) continue;
+        for (const k of keys) (s.children ??= []).push(window.LAW_MAP.subregs[k]);
+      }
+    }
+    // per-มาตรา nodes inside the royal decrees (after the decree nodes were
+    // attached under มาตรา 4 by the mapping above)
     for (const [id, sections] of Object.entries(window.ACT_SECTIONS.decreeSections || {})) {
       const decree = findById(window.WORD_TREE_DATA, id);
       if (decree && sections.length) decree.children = sections;
     }
   }
   const dx = 30; // vertical gap per node
-  const dy = 360; // horizontal gap per depth (Thai labels are long)
+  const dy = 440; // horizontal gap per depth (labels carry statute text)
   const marginLeft = 160;
 
   const root = d3.hierarchy(window.WORD_TREE_DATA);
