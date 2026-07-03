@@ -17,6 +17,8 @@
     --c-decree: #9d174d;
     --c-guideline: #15803d;
     --c-pending: #b91c1c;
+    --c-chapter: #c2410c;
+    --c-provision: #57534e;
   }
   * { box-sizing: border-box; }
   body {
@@ -80,6 +82,8 @@
   <span style="--dot: var(--c-act)">พระราชบัญญัติ</span>
   <span style="--dot: var(--c-theme)">หมวดหัวข้อ (TDPG4.0)</span>
   <span style="--dot: var(--c-section)">มาตราสำคัญ</span>
+  <span style="--dot: var(--c-chapter)">หมวด/ส่วน</span>
+  <span style="--dot: var(--c-provision)">มาตรา</span>
   <span style="--dot: var(--c-decree)">พระราชกฤษฎีกา</span>
   <span style="--dot: var(--c-subreg)">ประกาศ/ระเบียบ</span>
   <span style="--dot: var(--c-guideline)">แนวปฏิบัติ TDPG4.0</span>
@@ -99,6 +103,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="data/word-tree-data.js"></script>
+<script src="data/act-sections-data.js"></script>
 <script>
 (function () {
   const COLORS = {
@@ -111,7 +116,32 @@
     decree: "var(--c-decree)",
     guideline: "var(--c-guideline)",
     pending: "var(--c-pending)",
+    chapter: "var(--c-chapter)",
+    provision: "var(--c-provision)",
   };
+
+  // graft generated per-มาตรา data (data/act-sections-data.js) onto the
+  // hand-curated tree: act structure + by-type listing under the PDPA node,
+  // มาตรา nodes under each royal decree
+  function findById(node, id) {
+    if (node.id === id) return node;
+    for (const c of node.children || []) {
+      const hit = findById(c, id);
+      if (hit) return hit;
+    }
+    return null;
+  }
+  if (window.ACT_SECTIONS) {
+    const pdpa = findById(window.WORD_TREE_DATA, "pdpa-act");
+    if (pdpa) {
+      pdpa.children.unshift(window.ACT_SECTIONS.actStructure);
+      pdpa.children.push(window.ACT_SECTIONS.byType);
+    }
+    for (const [id, sections] of Object.entries(window.ACT_SECTIONS.decreeSections || {})) {
+      const decree = findById(window.WORD_TREE_DATA, id);
+      if (decree && sections.length) decree.children = sections;
+    }
+  }
   const dx = 30; // vertical gap per node
   const dy = 360; // horizontal gap per depth (Thai labels are long)
   const marginLeft = 160;
