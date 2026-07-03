@@ -42,7 +42,24 @@
     border: 1.5px solid var(--bd, transparent);
     font-weight: 600;
   }
-  #tree-wrap { width: 100%; height: calc(100vh - 190px); overflow: hidden; }
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    padding: 8px 24px; font-size: 13px;
+    background: #fff; border-bottom: 1px solid var(--hampton);
+  }
+  .controls button {
+    font-family: inherit; font-size: 13px; font-weight: 700;
+    color: #fff; background: var(--smalt-blue);
+    border: 0; border-radius: 999px; padding: 4px 14px; cursor: pointer;
+  }
+  .controls button.alt { background: var(--sea-nymph); }
+  .controls button:hover { filter: brightness(1.08); }
+  .controls button:disabled { opacity: .4; cursor: default; }
+  #level-label {
+    font-weight: 700; color: var(--smalt-blue);
+    background: var(--hampton); border-radius: 999px; padding: 4px 14px;
+  }
+  #tree-wrap { width: 100%; height: calc(100vh - 235px); overflow: hidden; }
   svg { display: block; width: 100%; height: 100%; cursor: grab; }
   svg:active { cursor: grabbing; }
   .limb { fill: none; stroke-linecap: round; }
@@ -82,6 +99,13 @@
   <span class="chip" style="--bg:#fff; --fg:#b0713a; --bd:#E1A36F">พระราชกฤษฎีกา</span>
   <span class="chip" style="--bg:#fff; --fg:#b04a3a; --bd:#c96f5b">รอตรวจสอบ</span>
 </div>
+<div class="controls">
+  <span>กางทีละชั้น:</span>
+  <button id="btn-minus" title="พับลงหนึ่งชั้น">− พับ</button>
+  <span id="level-label"></span>
+  <button id="btn-plus" title="กางเพิ่มหนึ่งชั้น">+ กาง</button>
+  <button id="btn-fit" class="alt" title="ย่อ/ขยายให้เห็นทั้งต้น">จัดให้พอดีจอ</button>
+</div>
 <div id="tree-wrap"><svg id="tree"></svg></div>
 <div id="panel">
   <button class="close" aria-label="ปิด">✕</button>
@@ -120,7 +144,6 @@
   // limb colour follows the depth of the branch: trunk → twigs
   const LIMB = ["#577E89", "#6F9F9C", "#E1A36F", "#DEC484", "#E2D8A5", "#E2D8A5"];
   const limbColor = (d) => LIMB[Math.min(d.target.depth - 1, LIMB.length - 1)];
-  const limbWidth = (d) => Math.max(1.5, 13 - d.target.depth * 2.2);
 
   // assemble the tree: the act's own structure (generated) is the main
   // skeleton; TDPG4.0 chapters and sub-regulations (curated map) attach to
@@ -288,8 +311,8 @@
       .attr("class", "limb")
       .merge(link)
       .attr("stroke", limbColor)
-      .attr("stroke-width", limbWidth)
-      .attr("stroke-opacity", 0.55)
+      .attr("stroke-width", 1.7)
+      .attr("stroke-opacity", 0.8)
       .transition()
       .duration(250)
       .attr("d", limbPath);
@@ -301,23 +324,52 @@
     });
   }
 
+  // fit the visible canopy in the viewport (bounds from layout data —
+  // the DOM may still be mid-transition)
+  const wrap = document.getElementById("tree-wrap");
+  function fitView() {
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    root.each((d) => {
+      x0 = Math.min(x0, d.x); x1 = Math.max(x1, d.x);
+      y0 = Math.min(y0, d.y); y1 = Math.max(y1, d.y + (d.chipW || 200));
+    });
+    const bx = y0 - 20, by = x0 - 30, bw = y1 - y0 + 40, bh = x1 - x0 + 60;
+    const W = wrap.clientWidth, H = wrap.clientHeight;
+    const k = Math.min(W / bw, H / bh) * 0.96;
+    svg.transition().duration(400).call(zoom.transform, d3.zoomIdentity
+      .translate((W - k * bw) / 2 - k * bx, (H - k * bh) / 2 - k * by)
+      .scale(k));
+  }
+
+  // step-by-step expansion: each click opens (or folds) one more depth level
+  const LEVEL_NAMES = {
+    1: "1 · สิทธิพื้นฐาน",
+    2: "2 · รัฐธรรมนูญ",
+    3: "3 · พ.ร.บ. + กิ่งหลัก",
+    4: "4 · หมวด → มาตรา",
+    5: "5 · มาตรา → วรรค · TDPG · กฎหมายลำดับรอง",
+    6: "6 · อนุมาตรา / นิยาม / รายมาตรา พ.ร.ฎ.",
+    7: "7 · ครบทุกชั้น",
+  };
+  const MAX_LEVEL = 7;
+  let level = 4;
+  function applyLevel() {
+    root.descendants().forEach((d) => {
+      d.children = d.depth < level ? d._children : null;
+    });
+    update(root);
+    document.getElementById("level-label").textContent = LEVEL_NAMES[level];
+    document.getElementById("btn-minus").disabled = level <= 1;
+    document.getElementById("btn-plus").disabled = level >= MAX_LEVEL;
+  }
+  document.getElementById("btn-plus").onclick = () => { level = Math.min(MAX_LEVEL, level + 1); applyLevel(); };
+  document.getElementById("btn-minus").onclick = () => { level = Math.max(1, level - 1); applyLevel(); };
+  document.getElementById("btn-fit").onclick = fitView;
+
   root.x0 = 0;
   root.y0 = 0;
-  update(root);
-  // initial view: fit the whole canopy so it reads as one big tree
-  // (bounds from layout data — the DOM is still mid-transition here)
-  const wrap = document.getElementById("tree-wrap");
-  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
-  root.each((d) => {
-    x0 = Math.min(x0, d.x); x1 = Math.max(x1, d.x);
-    y0 = Math.min(y0, d.y); y1 = Math.max(y1, d.y + (d.chipW || 200));
-  });
-  const bx = y0 - 20, by = x0 - 30, bw = y1 - y0 + 40, bh = x1 - x0 + 60;
-  const W = wrap.clientWidth, H = wrap.clientHeight;
-  const k = Math.min(W / bw, H / bh) * 0.96;
-  svg.call(zoom.transform, d3.zoomIdentity
-    .translate((W - k * bw) / 2 - k * bx, (H - k * bh) / 2 - k * by)
-    .scale(k));
+  applyLevel();
+  fitView();
 })();
 </script>
 </body>
