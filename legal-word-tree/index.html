@@ -5,92 +5,82 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Legal Word Tree — สิทธิความเป็นส่วนตัว · PDPA · TDPG4.0</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
+  /* palette: dopelycolors 03 */
   :root {
-    --c-root: #7c3aed;
-    --c-constitution: #b45309;
-    --c-act: #0f766e;
-    --c-theme: #1d4ed8;
-    --c-section: #0369a1;
-    --c-subreg: #334155;
-    --c-decree: #9d174d;
-    --c-guideline: #15803d;
-    --c-pending: #b91c1c;
-    --c-chapter: #c2410c;
-    --c-provision: #57534e;
-    --c-paragraph: #64748b;
-    --c-item: #94a3b8;
+    --harvest-gold: #E1A36F;
+    --calico: #DEC484;
+    --hampton: #E2D8A5;
+    --sea-nymph: #6F9F9C;
+    --smalt-blue: #577E89;
+    --ink: #33413f;
+    --paper: #fbf9f0;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0;
     font-family: "Sarabun", system-ui, sans-serif;
-    background: #f8fafc;
-    color: #0f172a;
+    background: var(--paper);
+    color: var(--ink);
   }
   header {
     padding: 16px 24px 12px;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--hampton);
     background: #fff;
   }
-  header h1 { margin: 0; font-size: 20px; }
-  header p { margin: 4px 0 0; font-size: 13px; color: #64748b; }
+  header h1 { margin: 0; font-size: 20px; color: var(--smalt-blue); }
+  header p { margin: 4px 0 0; font-size: 13px; color: #6b7a72; }
   .legend {
-    display: flex; flex-wrap: wrap; gap: 12px;
-    padding: 8px 24px; font-size: 12px; color: #475569;
-    background: #fff; border-bottom: 1px solid #e2e8f0;
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    padding: 10px 24px; font-size: 12px;
+    background: #fff; border-bottom: 1px solid var(--hampton);
   }
-  .legend span::before {
-    content: ""; display: inline-block; width: 10px; height: 10px;
-    border-radius: 50%; margin-right: 5px; background: var(--dot);
+  .legend .chip {
+    display: inline-block; padding: 2px 10px; border-radius: 999px;
+    background: var(--bg, #eee); color: var(--fg, #333);
+    border: 1.5px solid var(--bd, transparent);
+    font-weight: 600;
   }
-  #tree-wrap { width: 100%; overflow: auto; }
-  svg { display: block; }
-  .link-path { fill: none; stroke: #cbd5e1; stroke-width: 1.5px; }
-  .node circle { stroke-width: 2px; cursor: pointer; }
-  .node text { font: 12px "Sarabun", sans-serif; cursor: pointer; }
-  .node text.has-children { font-weight: 700; }
+  #tree-wrap { width: 100%; height: calc(100vh - 190px); overflow: hidden; }
+  svg { display: block; width: 100%; height: 100%; cursor: grab; }
+  svg:active { cursor: grabbing; }
+  .limb { fill: none; stroke-linecap: round; }
+  .node { cursor: pointer; }
+  .node rect { stroke-width: 1.5px; }
+  .node text { font-family: "Sarabun", sans-serif; dominant-baseline: middle; }
   #panel {
-    position: fixed; right: 16px; top: 120px; width: 340px; max-height: 70vh;
-    overflow: auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, .08); padding: 16px; display: none;
+    position: fixed; right: 16px; top: 130px; width: 340px; max-height: 68vh;
+    overflow: auto; background: #fff; border: 1.5px solid var(--calico); border-radius: 12px;
+    box-shadow: 0 10px 28px rgba(87, 126, 137, .18); padding: 16px; display: none;
   }
-  #panel h2 { margin: 0 0 8px; font-size: 15px; }
-  #panel p { margin: 0 0 10px; font-size: 13px; line-height: 1.6; color: #334155; white-space: pre-line; }
-  #panel a {
-    display: block; font-size: 13px; color: #1d4ed8; margin: 4px 0;
-    text-decoration: none;
-  }
+  #panel h2 { margin: 0 0 8px; font-size: 15px; color: var(--smalt-blue); }
+  #panel p { margin: 0 0 10px; font-size: 13px; line-height: 1.65; color: var(--ink); white-space: pre-line; }
+  #panel a { display: block; font-size: 13px; color: var(--smalt-blue); margin: 4px 0; text-decoration: none; font-weight: 600; }
   #panel a:hover { text-decoration: underline; }
-  #panel .close {
-    float: right; border: 0; background: none; font-size: 16px;
-    cursor: pointer; color: #94a3b8;
-  }
-  footer { padding: 12px 24px 24px; font-size: 12px; color: #94a3b8; }
+  #panel .close { float: right; border: 0; background: none; font-size: 16px; cursor: pointer; color: var(--sea-nymph); }
+  footer { padding: 12px 24px 24px; font-size: 12px; color: #96a29a; }
 </style>
 </head>
 <body>
 <header>
-  <h1>Legal Word Tree — จากสิทธิความเป็นส่วนตัวสู่กฎหมายลำดับรอง PDPA</h1>
+  <h1>Legal Word Tree — จากสิทธิความเป็นส่วนตัวสู่ตัวบท PDPA</h1>
   <p>
-    รัฐธรรมนูญ พ.ศ. 2560 มาตรา 32 → พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 → หมวด/ส่วน → มาตรา → วรรค ·
-    แนวปฏิบัติ TDPG4.0 (คณะนิติศาสตร์ จุฬาฯ) และกฎหมายลำดับรอง 27 ฉบับ ผูกกับมาตราที่เกี่ยวข้อง ·
-    คลิกวงกลมเพื่อพับ/กาง คลิกข้อความเพื่อดูตัวบทเต็มและลิงก์
+    รัฐธรรมนูญ ม.32 → พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 → หมวด/ส่วน → มาตรา → วรรค ·
+    แนวปฏิบัติ TDPG4.0 และกฎหมายลำดับรอง 27 ฉบับ ผูกกับมาตราที่เกี่ยวข้อง ·
+    หมุนล้อ/บีบนิ้วเพื่อซูม · ลากเพื่อเลื่อน · คลิกคำเพื่อกางกิ่งและอ่านตัวบทเต็ม
   </p>
 </header>
 <div class="legend">
-  <span style="--dot: var(--c-root)">สิทธิพื้นฐาน</span>
-  <span style="--dot: var(--c-constitution)">รัฐธรรมนูญ</span>
-  <span style="--dot: var(--c-act)">พระราชบัญญัติ</span>
-  <span style="--dot: var(--c-chapter)">หมวด/ส่วน</span>
-  <span style="--dot: var(--c-provision)">มาตรา</span>
-  <span style="--dot: var(--c-paragraph)">วรรค</span>
-  <span style="--dot: var(--c-item)">อนุมาตรา/นิยาม</span>
-  <span style="--dot: var(--c-decree)">พระราชกฤษฎีกา</span>
-  <span style="--dot: var(--c-subreg)">ประกาศ/ระเบียบ</span>
-  <span style="--dot: var(--c-guideline)">แนวปฏิบัติ TDPG4.0</span>
-  <span style="--dot: var(--c-pending)">รอตรวจสอบ</span>
+  <span class="chip" style="--bg:#577E89; --fg:#fff">สิทธิ / รัฐธรรมนูญ / พ.ร.บ.</span>
+  <span class="chip" style="--bg:#E1A36F; --fg:#fff">หมวด / ส่วน</span>
+  <span class="chip" style="--bg:#6F9F9C; --fg:#fff">มาตรา</span>
+  <span class="chip" style="--bg:#DEC484; --fg:#4a4028">วรรค</span>
+  <span class="chip" style="--bg:#E2D8A5; --fg:#57503a">อนุมาตรา / นิยาม</span>
+  <span class="chip" style="--bg:#fff; --fg:#4f7572; --bd:#6F9F9C">แนวปฏิบัติ TDPG4.0</span>
+  <span class="chip" style="--bg:#fff; --fg:#3f6570; --bd:#577E89">ประกาศ / ระเบียบ</span>
+  <span class="chip" style="--bg:#fff; --fg:#b0713a; --bd:#E1A36F">พระราชกฤษฎีกา</span>
+  <span class="chip" style="--bg:#fff; --fg:#b04a3a; --bd:#c96f5b">รอตรวจสอบ</span>
 </div>
 <div id="tree-wrap"><svg id="tree"></svg></div>
 <div id="panel">
@@ -101,7 +91,8 @@
 </div>
 <footer>
   แหล่งข้อมูล: law-connection dataset (Act 299) · TDPG4.0 — Thailand Data Protection Guidelines 4.0,
-  คณะนิติศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย (CC BY 3.0 TH) · ราชกิจจานุเบกษา · เว็บไซต์ สคส. (PDPC)
+  คณะนิติศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย (CC BY 3.0 TH) · ราชกิจจานุเบกษา · เว็บไซต์ สคส. (PDPC) ·
+  ชุดสี dopelycolors 03 (Harvest Gold · Calico · Hampton · Sea Nymph · Smalt Blue)
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
@@ -110,21 +101,26 @@
 <script src="data/law-map.js"></script>
 <script>
 (function () {
-  const COLORS = {
-    root: "var(--c-root)",
-    constitution: "var(--c-constitution)",
-    act: "var(--c-act)",
-    theme: "var(--c-theme)",
-    section: "var(--c-section)",
-    subreg: "var(--c-subreg)",
-    decree: "var(--c-decree)",
-    guideline: "var(--c-guideline)",
-    pending: "var(--c-pending)",
-    chapter: "var(--c-chapter)",
-    provision: "var(--c-provision)",
-    paragraph: "var(--c-paragraph)",
-    item: "var(--c-item)",
+  // word-chip style per node type — palette only
+  const STYLE = {
+    root:         { bg: "#577E89", fg: "#ffffff", bd: "#577E89", size: 22, weight: 700 },
+    constitution: { bg: "#577E89", fg: "#ffffff", bd: "#577E89", size: 17, weight: 700 },
+    act:          { bg: "#577E89", fg: "#ffffff", bd: "#577E89", size: 17, weight: 700 },
+    chapter:      { bg: "#E1A36F", fg: "#ffffff", bd: "#E1A36F", size: 14, weight: 700 },
+    provision:    { bg: "#6F9F9C", fg: "#ffffff", bd: "#6F9F9C", size: 12.5, weight: 600 },
+    paragraph:    { bg: "#DEC484", fg: "#4a4028", bd: "#DEC484", size: 12, weight: 500 },
+    item:         { bg: "#E2D8A5", fg: "#57503a", bd: "#E2D8A5", size: 11.5, weight: 500 },
+    guideline:    { bg: "#ffffff", fg: "#4f7572", bd: "#6F9F9C", size: 12, weight: 600 },
+    subreg:       { bg: "#ffffff", fg: "#3f6570", bd: "#577E89", size: 12, weight: 600 },
+    decree:       { bg: "#ffffff", fg: "#b0713a", bd: "#E1A36F", size: 12, weight: 600 },
+    theme:        { bg: "#6F9F9C", fg: "#ffffff", bd: "#6F9F9C", size: 13, weight: 700 },
+    pending:      { bg: "#ffffff", fg: "#b04a3a", bd: "#c96f5b", size: 12, weight: 600 },
   };
+  const styleOf = (d) => STYLE[d.data.type] || STYLE.subreg;
+  // limb colour follows the depth of the branch: trunk → twigs
+  const LIMB = ["#577E89", "#6F9F9C", "#E1A36F", "#DEC484", "#E2D8A5", "#E2D8A5"];
+  const limbColor = (d) => LIMB[Math.min(d.target.depth - 1, LIMB.length - 1)];
+  const limbWidth = (d) => Math.max(1.5, 13 - d.target.depth * 2.2);
 
   // assemble the tree: the act's own structure (generated) is the main
   // skeleton; TDPG4.0 chapters and sub-regulations (curated map) attach to
@@ -173,23 +169,40 @@
       if (decree && sections.length) decree.children = sections;
     }
   }
-  const dx = 30; // vertical gap per node
-  const dy = 440; // horizontal gap per depth (labels carry statute text)
-  const marginLeft = 160;
+
+  const dx = 34;  // vertical gap per word row
+  const dy = 400; // horizontal gap per depth
+  const marginLeft = 40;
 
   const root = d3.hierarchy(window.WORD_TREE_DATA);
   root.descendants().forEach((d, i) => {
     d.id = i;
     d._children = d.children;
-    // start with themes expanded, deeper levels collapsed
-    if (d.depth >= 3) d.children = null;
+    // open the whole act (chapters + มาตรา) so the canopy reads as one big tree;
+    // วรรค and deeper unfold on click
+    if (d.depth >= 4) d.children = null;
   });
 
   const svg = d3.select("#tree");
-  const gLink = svg.append("g");
-  const gNode = svg.append("g");
+  const gRoot = svg.append("g");
+  const gLink = gRoot.append("g");
+  const gNode = gRoot.append("g");
   const tree = d3.tree().nodeSize([dx, dy]);
-  const diagonal = d3.linkHorizontal().x((d) => d.y).y((d) => d.x);
+
+  const zoom = d3.zoom()
+    .scaleExtent([0.05, 3])
+    .on("zoom", (e) => gRoot.attr("transform", e.transform));
+  svg.call(zoom);
+
+  // branch starts at the right edge of the parent word-chip
+  function limbPath(d) {
+    const sx = d.source.y + (d.source.chipW || 0) + 4;
+    const sy = d.source.x;
+    const tx = d.target.y - 4;
+    const ty = d.target.x;
+    const mx = (sx + tx) / 2;
+    return `M${sx},${sy}C${mx},${sy} ${mx},${ty} ${tx},${ty}`;
+  }
 
   const panel = document.getElementById("panel");
   document.querySelector("#panel .close").onclick = () => (panel.style.display = "none");
@@ -212,18 +225,6 @@
 
   function update(source) {
     tree(root);
-    let top = Infinity, bottom = -Infinity;
-    root.each((d) => {
-      if (d.x < top) top = d.x;
-      if (d.x > bottom) bottom = d.x;
-    });
-    const height = bottom - top + dx * 4;
-    const width = (root.height + 1) * dy + marginLeft;
-    svg
-      .attr("width", width)
-      .attr("height", height)
-      .attr("viewBox", [-marginLeft, top - dx * 2, width, height]);
-
     const nodes = root.descendants();
     const links = root.links();
 
@@ -233,49 +234,65 @@
       .enter()
       .append("g")
       .attr("class", "node")
-      .attr("transform", () => `translate(${source.y0 ?? source.y},${source.x0 ?? source.x})`);
-
-    nodeEnter
-      .append("circle")
-      .attr("r", 6)
+      .attr("transform", () => `translate(${source.y0 ?? source.y},${source.x0 ?? source.x})`)
       .on("click", (event, d) => {
-        d.children = d.children ? null : d._children;
-        update(d);
+        if (d._children) {
+          d.children = d.children ? null : d._children;
+          update(d);
+        }
+        showPanel(d);
       });
 
-    nodeEnter
-      .append("text")
-      .attr("dy", "0.32em")
-      .on("click", (event, d) => showPanel(d));
+    nodeEnter.append("rect");
+    nodeEnter.append("text");
 
     const nodeAll = nodeEnter.merge(node);
     nodeAll
       .transition()
       .duration(250)
       .attr("transform", (d) => `translate(${d.y},${d.x})`);
-    nodeAll
-      .select("circle")
-      .attr("fill", (d) => (d._children && !d.children ? COLORS[d.data.type] : "#fff"))
-      .attr("stroke", (d) => COLORS[d.data.type]);
-    nodeAll
-      .select("text")
-      .attr("class", (d) => (d._children ? "has-children" : ""))
-      .attr("x", (d) => (d._children ? -12 : 12))
-      .attr("text-anchor", (d) => (d._children ? "end" : "start"))
-      .attr("fill", (d) => COLORS[d.data.type])
+
+    nodeAll.select("text")
+      .attr("x", 10)
+      .attr("y", 1)
+      .style("font-size", (d) => styleOf(d).size + "px")
+      .style("font-weight", (d) => styleOf(d).weight)
+      .attr("fill", (d) => styleOf(d).fg)
       .text((d) => d.data.name);
+
+    // size each word-chip to its text; folded branches get a dashed edge
+    nodeAll.each(function (d) {
+      const textEl = d3.select(this).select("text").node();
+      const w = textEl.getComputedTextLength();
+      const s = styleOf(d);
+      const h = s.size + 12;
+      d.chipW = w + 20;
+      d3.select(this).select("rect")
+        .attr("x", 0)
+        .attr("y", -h / 2)
+        .attr("width", d.chipW)
+        .attr("height", h)
+        .attr("rx", h / 2)
+        .attr("fill", s.bg)
+        .attr("stroke", s.bd)
+        .attr("stroke-dasharray", d._children && !d.children ? "5 3" : null)
+        .attr("stroke-width", d._children && !d.children ? 2.2 : 1.5);
+    });
 
     node.exit().remove();
 
-    const link = gLink.selectAll("path.link-path").data(links, (d) => d.target.id);
+    const link = gLink.selectAll("path.limb").data(links, (d) => d.target.id);
     link
       .enter()
       .append("path")
-      .attr("class", "link-path")
+      .attr("class", "limb")
       .merge(link)
+      .attr("stroke", limbColor)
+      .attr("stroke-width", limbWidth)
+      .attr("stroke-opacity", 0.55)
       .transition()
       .duration(250)
-      .attr("d", diagonal);
+      .attr("d", limbPath);
     link.exit().remove();
 
     root.each((d) => {
@@ -287,6 +304,20 @@
   root.x0 = 0;
   root.y0 = 0;
   update(root);
+  // initial view: fit the whole canopy so it reads as one big tree
+  // (bounds from layout data — the DOM is still mid-transition here)
+  const wrap = document.getElementById("tree-wrap");
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  root.each((d) => {
+    x0 = Math.min(x0, d.x); x1 = Math.max(x1, d.x);
+    y0 = Math.min(y0, d.y); y1 = Math.max(y1, d.y + (d.chipW || 200));
+  });
+  const bx = y0 - 20, by = x0 - 30, bw = y1 - y0 + 40, bh = x1 - x0 + 60;
+  const W = wrap.clientWidth, H = wrap.clientHeight;
+  const k = Math.min(W / bw, H / bh) * 0.96;
+  svg.call(zoom.transform, d3.zoomIdentity
+    .translate((W - k * bw) / 2 - k * bx, (H - k * bh) / 2 - k * by)
+    .scale(k));
 })();
 </script>
 </body>
