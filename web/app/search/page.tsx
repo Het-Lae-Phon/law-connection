@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { prisma } from "@/lib/db";
 import { formatThaiDate } from "@/lib/format";
 import { EntryActions } from "@/app/components/entry-actions";
+import { SearchBox } from "@/app/components/search-box";
+import { searchActs, searchEntries } from "@/lib/search";
 
 export const dynamic = "force-dynamic";
 
@@ -26,32 +27,16 @@ export default async function SearchPage({
   const page = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
   const PER_PAGE = 25;
 
-  const where = {
-    ...(query ? { title: { contains: query } } : {}),
-    ...(type ? { instrumentType: type } : {}),
-  };
+  const [matchingActs, result] =
+    query || type
+      ? await Promise.all([
+          query ? searchActs(query, 5) : Promise.resolve([]),
+          searchEntries(query, type || null),
+        ])
+      : [[], { tokens: [], total: 0, capped: false, entries: [] }];
 
-  const [matchingActs, total, entries] = query || type
-    ? await Promise.all([
-        query
-          ? prisma.act.findMany({
-              where: { fullName: { contains: query } },
-              include: { _count: { select: { entries: true } } },
-              orderBy: { entries: { _count: "desc" } },
-              take: 5,
-            })
-          : Promise.resolve([]),
-        prisma.gazetteEntry.count({ where }),
-        prisma.gazetteEntry.findMany({
-          where,
-          include: { act: true },
-          orderBy: { publishedAt: { sort: "desc", nulls: "last" } },
-          skip: (page - 1) * PER_PAGE,
-          take: PER_PAGE,
-        }),
-      ])
-    : [[], 0, []];
-
+  const total = result.total;
+  const entries = result.entries.slice((page - 1) * PER_PAGE, page * PER_PAGE);
   const totalPages = Math.ceil(total / PER_PAGE);
   const pageUrl = (p: number) =>
     `/search?q=${encodeURIComponent(query)}&type=${encodeURIComponent(type)}&page=${p}`;
@@ -59,19 +44,11 @@ export default async function SearchPage({
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">ค้นหา</h1>
+      <div className="max-w-2xl">
+        <SearchBox initialQuery={query} type={type} autoFocus />
+      </div>
       <form className="space-y-3">
-        <div className="flex max-w-2xl gap-2">
-          <input
-            type="text"
-            name="q"
-            defaultValue={query}
-            placeholder="ค้นจากชื่อเรื่องในราชกิจจานุเบกษา..."
-            className="flex-1 rounded-lg border border-slate-300 bg-white px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500"
-          />
-          <button type="submit" className="rounded-lg bg-slate-900 text-white px-6 py-2.5 hover:bg-slate-700">
-            ค้นหา
-          </button>
-        </div>
+        <input type="hidden" name="q" value={query} />
         <div className="flex flex-wrap gap-2 text-sm">
           <label
             className={`cursor-pointer rounded-full border px-3 py-1 ${!type ? "border-amber-500 bg-amber-50 text-amber-800" : "border-slate-300 bg-white"}`}
@@ -88,6 +65,12 @@ export default async function SearchPage({
               {t}
             </label>
           ))}
+          <button
+            type="submit"
+            className="rounded-full bg-slate-900 text-white px-4 py-1 hover:bg-slate-700"
+          >
+            ใช้ตัวกรอง
+          </button>
         </div>
       </form>
 
@@ -114,8 +97,8 @@ export default async function SearchPage({
       {(query || type) && (
         <section className="space-y-3">
           <p className="text-sm text-slate-500">
-            พบ {total.toLocaleString("th-TH")} รายการ
-            {totalPages > 1 && ` · หน้า ${page}/${totalPages}`}
+            พบ {total.toLocaleString("th-TH")} รายการ{result.capped && "ขึ้นไป (แสดงเฉพาะที่เกี่ยวข้องที่สุด)"}
+            {totalPages > 1 && ` · หน้า ${page}/${totalPages}`} · เรียงตามความเกี่ยวข้อง
           </p>
           <ul className="divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
             {entries.map((e) => (

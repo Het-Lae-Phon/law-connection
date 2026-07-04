@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { formatThaiDate } from "@/lib/format";
+import { SearchBox } from "@/app/components/search-box";
 
 export const dynamic = "force-dynamic";
 
@@ -32,20 +33,9 @@ export default async function Home() {
           ดัชนีกฎหมายไทยและกฎหมายลำดับรองที่เชื่อมโยงถึงกัน — ค้นหา คัดลอกการอ้างอิงที่ถูกต้อง
           และตามลิงก์ไปยังต้นฉบับในราชกิจจานุเบกษาหรือหน่วยงานผู้ออกกฎหมาย
         </p>
-        <form action="/search" className="flex max-w-xl mx-auto gap-2">
-          <input
-            type="text"
-            name="q"
-            placeholder="เช่น คุ้มครองข้อมูลส่วนบุคคล, กฎกระทรวง, ภาษี..."
-            className="flex-1 rounded-lg border border-slate-300 bg-white px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500"
-          />
-          <button
-            type="submit"
-            className="rounded-lg bg-slate-900 text-white px-6 py-2.5 hover:bg-slate-700"
-          >
-            ค้นหา
-          </button>
-        </form>
+        <div className="flex max-w-xl mx-auto">
+          <SearchBox />
+        </div>
         <div className="flex justify-center gap-8 text-sm text-slate-500 pt-2">
           <span>
             <b className="text-slate-900 text-lg">{entryCount.toLocaleString("th-TH")}</b>{" "}
