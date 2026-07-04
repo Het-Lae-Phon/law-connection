@@ -1,5 +1,6 @@
 generator client {
   provider      = "prisma-client-js"
+  // native = local dev; debian = Docker/HF Space; rhel = Vercel serverless
   binaryTargets = ["native", "debian-openssl-3.0.x", "rhel-openssl-3.0.x"]
 }
 

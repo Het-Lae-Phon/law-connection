@@ -2,6 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { formatThaiDate } from "@/lib/format";
 import { EntryActions } from "@/app/components/entry-actions";
+import { SearchBox } from "@/app/components/search-box";
+import { searchActsRanked, searchEntries } from "@/lib/search";
 
 export const dynamic = "force-dynamic";
 
@@ -44,21 +46,9 @@ export default async function SearchPage({
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">ค้นหา</h1>
 
-      <form className="space-y-3">
-        <input type="hidden" name="scope" value={scope} />
-        <div className="flex max-w-2xl gap-2">
-          <input
-            type="text"
-            name="q"
-            defaultValue={query}
-            placeholder="ค้นหากฎหมายแม่บทหรือกฎหมายลำดับรอง..."
-            className="flex-1 rounded-lg border border-slate-300 bg-white px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500"
-          />
-          <button type="submit" className="rounded-lg bg-slate-900 text-white px-6 py-2.5 hover:bg-slate-700">
-            ค้นหา
-          </button>
-        </div>
-      </form>
+      <div className="max-w-2xl">
+        <SearchBox initialQuery={query} scope={scope} autoFocus />
+      </div>
 
       <div className="inline-flex rounded-lg border border-slate-300 bg-white p-1 text-sm">
         <Link
@@ -122,6 +112,32 @@ export default async function SearchPage({
   );
 }
 
+function Pagination({
+  page,
+  totalPages,
+  urlFor,
+}: {
+  page: number;
+  totalPages: number;
+  urlFor: (p: number) => string;
+}) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="flex gap-2 justify-center text-sm">
+      {page > 1 && (
+        <Link href={urlFor(page - 1)} className="rounded border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-100">
+          ← ก่อนหน้า
+        </Link>
+      )}
+      {page < totalPages && (
+        <Link href={urlFor(page + 1)} className="rounded border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-100">
+          ถัดไป →
+        </Link>
+      )}
+    </div>
+  );
+}
+
 async function ActsResults({
   query,
   actType,
@@ -142,20 +158,29 @@ async function ActsResults({
     );
   }
 
-  const where = {
-    ...(query ? { fullName: { contains: query } } : {}),
-    ...(actType ? { actType } : {}),
-  };
-  const [total, acts] = await Promise.all([
-    prisma.act.count({ where }),
-    prisma.act.findMany({
-      where,
-      include: { _count: { select: { entries: true } } },
-      orderBy: { entries: { _count: "desc" } },
-      skip: (page - 1) * PER_PAGE,
-      take: PER_PAGE,
-    }),
-  ]);
+  // with a query: relevance-ranked (multi-keyword AND + shorthand aliases);
+  // type-only browsing keeps simple DB pagination
+  let total: number;
+  let acts: Awaited<ReturnType<typeof searchActsRanked>>;
+  let ranked = false;
+  if (query) {
+    const all = await searchActsRanked(query, actType || null);
+    total = all.length;
+    acts = all.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+    ranked = true;
+  } else {
+    const where = { actType };
+    [total, acts] = await Promise.all([
+      prisma.act.count({ where }),
+      prisma.act.findMany({
+        where,
+        include: { _count: { select: { entries: true } } },
+        orderBy: { entries: { _count: "desc" } },
+        skip: (page - 1) * PER_PAGE,
+        take: PER_PAGE,
+      }),
+    ]);
+  }
   const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
   const pageUrl = (p: number) => `${baseUrl("acts", query, actType)}&page=${p}`;
 
@@ -164,6 +189,7 @@ async function ActsResults({
       <p className="text-sm text-slate-500">
         พบ {total.toLocaleString("th-TH")} รายการ
         {totalPages > 1 && ` · หน้า ${page}/${totalPages}`}
+        {ranked && " · เรียงตามความเกี่ยวข้อง"}
       </p>
       <ul className="divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
         {acts.map((a) => (
@@ -180,20 +206,7 @@ async function ActsResults({
           </li>
         ))}
       </ul>
-      {totalPages > 1 && (
-        <div className="flex gap-2 justify-center text-sm">
-          {page > 1 && (
-            <Link href={pageUrl(page - 1)} className="rounded border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-100">
-              ← ก่อนหน้า
-            </Link>
-          )}
-          {page < totalPages && (
-            <Link href={pageUrl(page + 1)} className="rounded border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-100">
-              ถัดไป →
-            </Link>
-          )}
-        </div>
-      )}
+      <Pagination page={page} totalPages={totalPages} urlFor={pageUrl} />
     </section>
   );
 }
@@ -218,40 +231,28 @@ async function EntriesResults({
     );
   }
 
-  const where = {
-    ...(query ? { title: { contains: query } } : {}),
-    ...(instrumentType ? { instrumentType } : {}),
-  };
-
-  const [total, entries] = await Promise.all([
-    prisma.gazetteEntry.count({ where }),
-    prisma.gazetteEntry.findMany({
-      where,
-      include: { act: true },
-      orderBy: { publishedAt: { sort: "desc", nulls: "last" } },
-      skip: (page - 1) * PER_PAGE,
-      take: PER_PAGE,
-    }),
-  ]);
-
-  const totalPages = Math.ceil(total / PER_PAGE);
+  // relevance-ranked (multi-keyword AND + legal-weight scoring)
+  const result = await searchEntries(query, instrumentType || null);
+  const total = result.total;
+  const entries = result.entries.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
   const pageUrl = (p: number) => `${baseUrl("entries", query, instrumentType)}&page=${p}`;
 
   return (
     <section className="space-y-3">
       <p className="text-sm text-slate-500">
         พบ {total.toLocaleString("th-TH")} รายการ
+        {result.capped && "ขึ้นไป (แสดงเฉพาะที่เกี่ยวข้องที่สุด)"}
         {totalPages > 1 && ` · หน้า ${page}/${totalPages}`}
+        {query && " · เรียงตามความเกี่ยวข้อง"}
       </p>
       <ul className="divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
         {entries.map((e) => (
           <li key={e.id} className="p-4 space-y-1">
             <div className="flex items-start justify-between gap-4">
-              <div className="font-medium leading-snug">
-                <Link href={`/entry/${e.id}`} className="hover:text-amber-700 hover:underline">
-                  {e.title}
-                </Link>
-              </div>
+              <Link href={`/entry/${e.id}`} className="font-medium leading-snug hover:text-amber-700">
+                {e.title}
+              </Link>
               <EntryActions entry={e} />
             </div>
             <div className="text-sm text-slate-500 flex flex-wrap gap-x-3">
@@ -272,20 +273,7 @@ async function EntriesResults({
           </li>
         ))}
       </ul>
-      {totalPages > 1 && (
-        <div className="flex gap-2 justify-center text-sm">
-          {page > 1 && (
-            <Link href={pageUrl(page - 1)} className="rounded border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-100">
-              ← ก่อนหน้า
-            </Link>
-          )}
-          {page < totalPages && (
-            <Link href={pageUrl(page + 1)} className="rounded border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-100">
-              ถัดไป →
-            </Link>
-          )}
-        </div>
-      )}
+      <Pagination page={page} totalPages={totalPages} urlFor={pageUrl} />
     </section>
   );
 }
