@@ -7,7 +7,7 @@ import { EntryActions } from "@/app/components/entry-actions";
 import { CopyCite } from "@/app/components/copy-cite";
 import { VerifyBadge } from "@/app/components/verify-badge";
 import { BackLink } from "@/app/components/back-link";
-import { buildCitation } from "@/lib/cite";
+import { buildCitation, originalSource } from "@/lib/cite";
 import { GROUP_ORDER, GROUP_LABELS } from "@/lib/instrument-labels";
 
 // Thai government domains get an "official" badge on source links
@@ -113,16 +113,22 @@ export default async function ActPage({
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
           <CopyCite citation={primaryEntry ? buildCitation(primaryEntry) : act.fullName} />
-          {primaryEntry?.pdfUrl.startsWith("http") && (
-            <a
-              href={primaryEntry.pdfUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded bg-slate-900 text-white px-3 py-1.5 text-sm hover:bg-slate-700"
-            >
-              ต้นฉบับในราชกิจจานุเบกษา ↗
-            </a>
-          )}
+          {primaryEntry &&
+            (() => {
+              const source = originalSource(primaryEntry);
+              return (
+                source && (
+                  <a
+                    href={source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded bg-slate-900 text-white px-3 py-1.5 text-sm hover:bg-slate-700"
+                  >
+                    ต้นฉบับ · {source.label} ↗
+                  </a>
+                )
+              );
+            })()}
         </div>
       </header>
 
