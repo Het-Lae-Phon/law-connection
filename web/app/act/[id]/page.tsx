@@ -75,7 +75,7 @@ function VerifyBadge({ status, source }: { status: string; source: string | null
   const how = (source && SOURCE_LABELS[source]) || "";
   return (
     <span
-      className="inline-block rounded bg-slate-100 text-slate-600 text-xs px-1.5 py-0.5"
+      className="inline-block rounded bg-stone-100 text-stone-600 text-xs px-1.5 py-0.5"
       title="สร้างโดยระบบ ยังไม่ได้รับการยืนยันโดยผู้เชี่ยวชาญ"
     >
       ⚙ เชื่อมโยงอัตโนมัติ{how && ` (${how})`}
@@ -150,7 +150,7 @@ export default async function ActPage({
 
   return (
     <div className="space-y-8">
-      <nav className="text-sm text-slate-500">
+      <nav className="text-sm text-stone-500">
         <Link href="/" className="hover:underline">
           หน้าแรก
         </Link>{" "}
@@ -158,13 +158,13 @@ export default async function ActPage({
         <Link href="/acts" className="hover:underline">
           กฎหมายแม่บท
         </Link>{" "}
-        / <span className="text-slate-700">{act.shortName}</span>
+        / <span className="text-stone-700">{act.shortName}</span>
       </nav>
 
       <header className="space-y-2">
-        <div className="text-sm font-medium text-amber-700">{act.actType}</div>
+        <div className="text-sm font-medium text-seal-700">{act.actType}</div>
         <h1 className="text-2xl font-bold leading-snug">{act.fullName}</h1>
-        <p className="text-slate-500 text-sm">
+        <p className="text-stone-500 text-sm">
           กฎหมายลำดับรองและฉบับที่เกี่ยวข้องในระบบ {subCount.toLocaleString("th-TH")} ฉบับ
           {verifiedCount > 0 && ` · ยืนยันโดยชุมชนแล้ว ${verifiedCount.toLocaleString("th-TH")} ฉบับ`}{" "}
           (จากราชกิจจานุเบกษาและห้องสมุดกฎหมายกฤษฎีกา)
@@ -180,7 +180,7 @@ export default async function ActPage({
                     href={source.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="rounded bg-slate-900 text-white px-3 py-1.5 text-sm hover:bg-slate-700"
+                    className="rounded bg-stone-900 text-white px-3 py-1.5 text-sm hover:bg-stone-700"
                   >
                     ต้นฉบับ · {source.label} ↗
                   </a>
@@ -190,15 +190,15 @@ export default async function ActPage({
         </div>
       </header>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-5 space-y-3">
+      <section className="rounded-lg border border-stone-200 bg-white p-5 space-y-3">
         <h2 className="font-bold">
           แหล่งอ้างอิงทางการ{" "}
-          <span className="text-sm font-normal text-slate-400">
+          <span className="text-sm font-normal text-stone-400">
             {act.sources.length.toLocaleString("th-TH")} แหล่ง
           </span>
         </h2>
         {act.sources.length === 0 && (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-stone-500">
             ยังไม่มีแหล่งอ้างอิง — ช่วยเพิ่มลิงก์ฉบับเต็ม/ฉบับปรับปรุงจากแหล่งทางการ เช่น
             สำนักงานคณะกรรมการกฤษฎีกา (krisdika.go.th), ระบบกลางทางกฎหมาย (law.go.th)
             เพื่อให้ผู้อื่นตรวจสอบความถูกต้องได้ง่ายขึ้น
@@ -212,7 +212,7 @@ export default async function ActPage({
                   href={s.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-medium text-amber-800 hover:underline"
+                  className="font-medium text-seal-800 hover:underline"
                 >
                   {s.title} ↗
                 </a>
@@ -221,8 +221,8 @@ export default async function ActPage({
                     เว็บไซต์หน่วยงานรัฐ
                   </span>
                 )}
-                {s.publisher && <span className="text-slate-500">{s.publisher}</span>}
-                <span className="text-xs text-slate-400">
+                {s.publisher && <span className="text-stone-500">{s.publisher}</span>}
+                <span className="text-xs text-stone-400">
                   เพิ่มโดย {s.contributor || "ไม่ระบุชื่อ"}
                 </span>
               </li>
@@ -230,7 +230,7 @@ export default async function ActPage({
           </ul>
         )}
         <details>
-          <summary className="cursor-pointer text-sm text-amber-700 hover:underline">
+          <summary className="cursor-pointer text-sm text-seal-700 hover:underline">
             + เสนอแหล่งอ้างอิง
           </summary>
           <form action={suggestSource} className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -239,26 +239,26 @@ export default async function ActPage({
               name="title"
               required
               placeholder="ชื่อแหล่ง เช่น ฉบับปรับปรุงล่าสุด (กฤษฎีกา) *"
-              className="rounded border border-slate-300 p-2 text-sm"
+              className="rounded border border-stone-300 p-2 text-sm"
             />
             <input
               name="url"
               type="url"
               required
               placeholder="https://... *"
-              className="rounded border border-slate-300 p-2 text-sm"
+              className="rounded border border-stone-300 p-2 text-sm"
             />
             <input
               name="publisher"
               placeholder="หน่วยงานผู้เผยแพร่ (ไม่บังคับ)"
-              className="rounded border border-slate-300 p-2 text-sm"
+              className="rounded border border-stone-300 p-2 text-sm"
             />
             <input
               name="contributor"
               placeholder="ชื่อ/สังกัด (ไม่บังคับ)"
-              className="rounded border border-slate-300 p-2 text-sm"
+              className="rounded border border-stone-300 p-2 text-sm"
             />
-            <button className="rounded bg-slate-900 text-white px-4 py-2 text-sm hover:bg-slate-700 justify-self-start">
+            <button className="rounded bg-stone-900 text-white px-4 py-2 text-sm hover:bg-stone-700 justify-self-start">
               ส่งเข้าคิวตรวจสอบ
             </button>
           </form>
@@ -266,14 +266,14 @@ export default async function ActPage({
       </section>
 
       {groups.size === 0 && (
-        <p className="text-slate-500">
+        <p className="text-stone-500">
           ยังไม่มีประกาศที่เชื่อมโยงกับกฎหมายฉบับนี้ในช่วงข้อมูลที่มี
         </p>
       )}
 
       {filterType && (
         <p className="text-sm">
-          <Link href={`/act/${act.id}`} className="text-amber-700 hover:underline">
+          <Link href={`/act/${act.id}`} className="text-seal-700 hover:underline">
             ← กลับไปหน้ารวมทุกประเภท
           </Link>
         </p>
@@ -287,7 +287,7 @@ export default async function ActPage({
           <section key={key}>
             <h2 className="text-lg font-bold mb-3 flex items-baseline gap-2">
               {GROUP_LABELS[key] ?? key}
-              <span className="text-sm font-normal text-slate-400">
+              <span className="text-sm font-normal text-stone-400">
                 {total.toLocaleString("th-TH")} ฉบับ
                 {!shownAll && !filterType && ` · แสดง ${list.length} รายการล่าสุด`}
                 {filterType && ` · หน้า ${page}/${Math.max(1, Math.ceil(total / PER_PAGE))}`}
@@ -295,13 +295,13 @@ export default async function ActPage({
               {!shownAll && !filterType && (
                 <Link
                   href={`/act/${act.id}?type=${encodeURIComponent(key)}`}
-                  className="text-sm font-normal text-amber-700 hover:underline"
+                  className="text-sm font-normal text-seal-700 hover:underline"
                 >
                   ดูทั้งหมด →
                 </Link>
               )}
             </h2>
-            <ul className="divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
+            <ul className="divide-y divide-stone-200 rounded-lg border border-stone-200 bg-white">
               {list.map((e) => (
                 <li key={e.id} className="p-4">
                   <div className="flex items-start justify-between gap-4">
@@ -309,12 +309,12 @@ export default async function ActPage({
                       <div className="font-medium leading-snug">
                         {e.title}
                         {e.isAmendment && (
-                          <span className="ml-2 inline-block rounded bg-amber-100 text-amber-800 text-xs px-1.5 py-0.5 align-middle">
+                          <span className="ml-2 inline-block rounded bg-seal-100 text-seal-800 text-xs px-1.5 py-0.5 align-middle">
                             ฉบับแก้ไข
                           </span>
                         )}
                       </div>
-                      <div className="text-sm text-slate-500">
+                      <div className="text-sm text-stone-500">
                         {formatThaiDate(e.publishedAt)}
                         {e.volume > 0 && ` · เล่ม ${e.volume} ตอนที่ ${e.issue} ${e.category} หน้า ${e.page}`}
                         {ORIGIN_LABELS[e.origin] && ` · ${ORIGIN_LABELS[e.origin]}`}
@@ -342,18 +342,18 @@ export default async function ActPage({
                               name="reason"
                               required
                               placeholder="เหตุผล เช่น ออกตามกฎหมายฉบับอื่น..."
-                              className="w-full rounded border border-slate-300 p-2 text-sm"
+                              className="w-full rounded border border-stone-300 p-2 text-sm"
                               rows={2}
                             />
                             <input
                               name="correctAct"
                               placeholder="กฎหมายแม่บทที่ถูกต้อง (ถ้าทราบ)"
-                              className="w-full rounded border border-slate-300 p-2 text-sm"
+                              className="w-full rounded border border-stone-300 p-2 text-sm"
                             />
                             <input
                               name="contributor"
                               placeholder="ชื่อ/สังกัด (ไม่บังคับ)"
-                              className="w-full rounded border border-slate-300 p-2 text-sm"
+                              className="w-full rounded border border-stone-300 p-2 text-sm"
                             />
                             <button className="rounded bg-red-700 text-white px-3 py-1.5">
                               ส่งข้อโต้แย้ง
@@ -372,7 +372,7 @@ export default async function ActPage({
                 {page > 1 && (
                   <Link
                     href={`/act/${act.id}?type=${encodeURIComponent(key)}&page=${page - 1}`}
-                    className="rounded border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-100"
+                    className="rounded border border-stone-300 bg-white px-3 py-1.5 hover:bg-stone-100"
                   >
                     ← ก่อนหน้า
                   </Link>
@@ -380,7 +380,7 @@ export default async function ActPage({
                 {page * PER_PAGE < total && (
                   <Link
                     href={`/act/${act.id}?type=${encodeURIComponent(key)}&page=${page + 1}`}
-                    className="rounded border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-100"
+                    className="rounded border border-stone-300 bg-white px-3 py-1.5 hover:bg-stone-100"
                   >
                     ถัดไป →
                   </Link>
@@ -391,9 +391,9 @@ export default async function ActPage({
         );
       })}
 
-      <section className="rounded-lg border border-dashed border-slate-300 bg-white p-5 space-y-3">
+      <section className="rounded-lg border border-dashed border-stone-300 bg-white p-5 space-y-3">
         <h2 className="font-bold">พบกฎหมายลำดับรองที่ขาดหายไป?</h2>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-stone-500">
           แจ้งกฎกระทรวง ประกาศ หรือระเบียบที่ออกตามกฎหมายฉบับนี้แต่ไม่ปรากฏในรายการ
           ข้อเสนอจะเข้าคิวตรวจสอบก่อนแสดงผล
         </p>
@@ -403,20 +403,20 @@ export default async function ActPage({
             name="title"
             required
             placeholder="ชื่อเต็มของกฎหมายลำดับรอง *"
-            className="rounded border border-slate-300 p-2 text-sm sm:col-span-2"
+            className="rounded border border-stone-300 p-2 text-sm sm:col-span-2"
           />
           <input
             name="pdfUrl"
             placeholder="ลิงก์ PDF ราชกิจจานุเบกษา (ถ้ามี)"
-            className="rounded border border-slate-300 p-2 text-sm"
+            className="rounded border border-stone-300 p-2 text-sm"
           />
-          <input name="date" type="date" className="rounded border border-slate-300 p-2 text-sm" />
+          <input name="date" type="date" className="rounded border border-stone-300 p-2 text-sm" />
           <input
             name="contributor"
             placeholder="ชื่อ/สังกัด (ไม่บังคับ)"
-            className="rounded border border-slate-300 p-2 text-sm"
+            className="rounded border border-stone-300 p-2 text-sm"
           />
-          <button className="rounded bg-slate-900 text-white px-4 py-2 text-sm hover:bg-slate-700">
+          <button className="rounded bg-stone-900 text-white px-4 py-2 text-sm hover:bg-stone-700">
             ส่งเข้าคิวตรวจสอบ
           </button>
         </form>
@@ -424,12 +424,12 @@ export default async function ActPage({
 
       <section className="space-y-3">
         <h2 className="text-lg font-bold">
-          ความเห็น <span className="text-sm font-normal text-slate-400">{act.contributions.length}</span>
+          ความเห็น <span className="text-sm font-normal text-stone-400">{act.contributions.length}</span>
         </h2>
         {act.contributions.map((c) => (
-          <div key={c.id} className="rounded-lg border border-slate-200 bg-white p-4 text-sm">
-            <div className="text-slate-700 whitespace-pre-wrap">{c.comment}</div>
-            <div className="text-xs text-slate-400 mt-2">
+          <div key={c.id} className="rounded-lg border border-stone-200 bg-white p-4 text-sm">
+            <div className="text-stone-700 whitespace-pre-wrap">{c.comment}</div>
+            <div className="text-xs text-stone-400 mt-2">
               {c.contributor || "ไม่ระบุชื่อ"} · {formatThaiDate(c.createdAt)}
             </div>
           </div>
@@ -440,16 +440,16 @@ export default async function ActPage({
             name="comment"
             required
             placeholder="ข้อสังเกตเกี่ยวกับกฎหมายฉบับนี้ เช่น สถานะการยกเลิก ความเชื่อมโยงที่ควรเพิ่ม..."
-            className="w-full rounded border border-slate-300 p-3 text-sm"
+            className="w-full rounded border border-stone-300 p-3 text-sm"
             rows={3}
           />
           <div className="flex gap-2">
             <input
               name="contributor"
               placeholder="ชื่อ/สังกัด (ไม่บังคับ)"
-              className="flex-1 rounded border border-slate-300 p-2 text-sm"
+              className="flex-1 rounded border border-stone-300 p-2 text-sm"
             />
-            <button className="rounded bg-slate-900 text-white px-4 py-2 text-sm hover:bg-slate-700">
+            <button className="rounded bg-stone-900 text-white px-4 py-2 text-sm hover:bg-stone-700">
               แสดงความเห็น
             </button>
           </div>

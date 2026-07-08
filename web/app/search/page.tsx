@@ -51,7 +51,7 @@ export default async function SearchPage({
         <input type="hidden" name="q" value={query} />
         <div className="flex flex-wrap gap-2 text-sm">
           <label
-            className={`cursor-pointer rounded-full border px-3 py-1 ${!type ? "border-amber-500 bg-amber-50 text-amber-800" : "border-slate-300 bg-white"}`}
+            className={`cursor-pointer rounded-full border px-3 py-1 ${!type ? "border-seal-500 bg-seal-50 text-seal-800" : "border-stone-300 bg-white"}`}
           >
             <input type="radio" name="type" value="" defaultChecked={!type} className="hidden" />
             ทุกประเภท
@@ -59,7 +59,7 @@ export default async function SearchPage({
           {TYPE_FILTERS.map((t) => (
             <label
               key={t}
-              className={`cursor-pointer rounded-full border px-3 py-1 ${type === t ? "border-amber-500 bg-amber-50 text-amber-800" : "border-slate-300 bg-white"}`}
+              className={`cursor-pointer rounded-full border px-3 py-1 ${type === t ? "border-seal-500 bg-seal-50 text-seal-800" : "border-stone-300 bg-white"}`}
             >
               <input type="radio" name="type" value={t} defaultChecked={type === t} className="hidden" />
               {t}
@@ -67,7 +67,7 @@ export default async function SearchPage({
           ))}
           <button
             type="submit"
-            className="rounded-full bg-slate-900 text-white px-4 py-1 hover:bg-slate-700"
+            className="rounded-full bg-stone-900 text-white px-4 py-1 hover:bg-stone-700"
           >
             ใช้ตัวกรอง
           </button>
@@ -76,16 +76,16 @@ export default async function SearchPage({
 
       {matchingActs.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-slate-500 mb-2">กฎหมายแม่บทที่ตรงกับคำค้น</h2>
+          <h2 className="text-sm font-semibold text-stone-500 mb-2">กฎหมายแม่บทที่ตรงกับคำค้น</h2>
           <div className="grid gap-2 sm:grid-cols-2">
             {matchingActs.map((a) => (
               <Link
                 key={a.id}
                 href={`/act/${a.id}`}
-                className="rounded-lg border border-amber-300 bg-amber-50 p-3 hover:bg-amber-100"
+                className="rounded-lg border border-seal-300 bg-seal-50 p-3 hover:bg-seal-100"
               >
                 <div className="font-semibold leading-snug">{a.fullName}</div>
-                <div className="text-sm text-slate-600">
+                <div className="text-sm text-stone-600">
                   {a._count.entries.toLocaleString("th-TH")} ฉบับที่เชื่อมโยง →
                 </div>
               </Link>
@@ -96,18 +96,18 @@ export default async function SearchPage({
 
       {(query || type) && (
         <section className="space-y-3">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-stone-500">
             พบ {total.toLocaleString("th-TH")} รายการ{result.capped && "ขึ้นไป (แสดงเฉพาะที่เกี่ยวข้องที่สุด)"}
             {totalPages > 1 && ` · หน้า ${page}/${totalPages}`} · เรียงตามความเกี่ยวข้อง
           </p>
-          <ul className="divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
+          <ul className="divide-y divide-stone-200 rounded-lg border border-stone-200 bg-white">
             {entries.map((e) => (
               <li key={e.id} className="p-4 space-y-1">
                 <div className="flex items-start justify-between gap-4">
                   <div className="font-medium leading-snug">{e.title}</div>
                   <EntryActions entry={e} />
                 </div>
-                <div className="text-sm text-slate-500 flex flex-wrap gap-x-3">
+                <div className="text-sm text-stone-500 flex flex-wrap gap-x-3">
                   <span>{formatThaiDate(e.publishedAt)}</span>
                   {e.volume > 0 && (
                     <span>
@@ -117,7 +117,7 @@ export default async function SearchPage({
                   {e.origin === "krisdika" && <span>ห้องสมุดกฎหมายกฤษฎีกา</span>}
                   {e.origin === "pdpc" && <span>เว็บไซต์ สคส. (PDPC)</span>}
                   {e.act && (
-                    <Link href={`/act/${e.act.id}`} className="text-amber-700 hover:underline">
+                    <Link href={`/act/${e.act.id}`} className="text-seal-700 hover:underline">
                       ↳ {e.act.fullName}
                     </Link>
                   )}
@@ -128,12 +128,12 @@ export default async function SearchPage({
           {totalPages > 1 && (
             <div className="flex gap-2 justify-center text-sm">
               {page > 1 && (
-                <Link href={pageUrl(page - 1)} className="rounded border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-100">
+                <Link href={pageUrl(page - 1)} className="rounded border border-stone-300 bg-white px-3 py-1.5 hover:bg-stone-100">
                   ← ก่อนหน้า
                 </Link>
               )}
               {page < totalPages && (
-                <Link href={pageUrl(page + 1)} className="rounded border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-100">
+                <Link href={pageUrl(page + 1)} className="rounded border border-stone-300 bg-white px-3 py-1.5 hover:bg-stone-100">
                   ถัดไป →
                 </Link>
               )}

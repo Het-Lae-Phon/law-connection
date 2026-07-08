@@ -25,7 +25,7 @@ function DocBlock({ block }: { block: Block }) {
           {block.lines.map((l, i) => (
             <div key={i}>{l}</div>
           ))}
-          <div className="mx-auto mt-4 w-40 border-b border-slate-800" />
+          <div className="mx-auto mt-4 w-40 border-b border-stone-800" />
         </div>
       );
     case "meta":
@@ -54,7 +54,7 @@ function DocBlock({ block }: { block: Block }) {
       );
     case "note":
       return (
-        <div className="text-sm text-slate-400 leading-relaxed">
+        <div className="text-sm text-stone-400 leading-relaxed">
           {block.lines.map((l, i) => (
             <div key={i}>{l}</div>
           ))}
@@ -86,7 +86,7 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
 
   return (
     <div className="space-y-6">
-      <nav className="text-sm text-slate-500">
+      <nav className="text-sm text-stone-500">
         <Link href="/" className="hover:underline">
           หน้าแรก
         </Link>{" "}
@@ -98,19 +98,19 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
             </Link>{" "}
           </>
         )}
-        / <span className="text-slate-700">สำเนาอ้างอิง</span>
+        / <span className="text-stone-700">สำเนาอ้างอิง</span>
       </nav>
 
       <header className="space-y-2">
         <h1 className="text-xl font-bold leading-snug">{entry.title}</h1>
-        <div className="text-sm text-slate-500 flex flex-wrap gap-x-3">
+        <div className="text-sm text-stone-500 flex flex-wrap gap-x-3">
           <span>{formatThaiDate(entry.publishedAt)}</span>
           <span>ที่มาของสำเนา: ห้องสมุดกฎหมาย สำนักงานคณะกรรมการกฤษฎีกา</span>
         </div>
         {entry.act && (
           <div className="text-sm">
             ออกตามความใน{" "}
-            <Link href={`/act/${entry.act.id}`} className="text-amber-700 hover:underline">
+            <Link href={`/act/${entry.act.id}`} className="text-seal-700 hover:underline">
               {entry.act.fullName}
             </Link>
           </div>
@@ -120,7 +120,7 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
         </div>
       </header>
 
-      <div className="rounded-lg border border-slate-300 bg-white p-4 text-sm space-y-2">
+      <div className="rounded-lg border border-stone-300 bg-white p-4 text-sm space-y-2">
         <div className="font-bold">การเข้าถึงต้นฉบับ</div>
         {entry.sourceUrl?.startsWith("http") ? (
           <p>
@@ -128,7 +128,7 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
               href={entry.sourceUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block rounded bg-slate-900 text-white px-3 py-1.5 hover:bg-slate-700"
+              className="inline-block rounded bg-stone-900 text-white px-3 py-1.5 hover:bg-stone-700"
             >
               เปิดต้นฉบับ PDF ในราชกิจจานุเบกษา ↗
             </a>
@@ -143,7 +143,7 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
               href="https://ratchakitcha.soc.go.th"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-amber-700 underline"
+              className="text-seal-700 underline"
             >
               ratchakitcha.soc.go.th
             </a>
@@ -156,26 +156,26 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
               href="https://www.ocs.go.th/searchlaw"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-amber-700 underline"
+              className="text-seal-700 underline"
             >
               ocs.go.th/searchlaw
             </a>
           </p>
         )}
-        <p className="text-amber-800">
+        <p className="text-seal-800">
           ⚠️ ข้อความด้านล่างเป็น<b>สำเนาเพื่อความสะดวกในการอ้างอิง</b> (แปลงจากต้นฉบับด้วยเครื่อง
           อาจมีคลาดเคลื่อน) — การใช้อ้างอิงทางกฎหมายให้ยึดต้นฉบับเป็นสำคัญ
         </p>
       </div>
 
       <article
-        className={`${sarabun.className} rounded-lg border border-slate-200 bg-white px-6 py-10 sm:px-16 sm:py-14 text-[17px] text-slate-900 space-y-4`}
+        className={`${sarabun.className} rounded-lg border border-stone-200 bg-white px-6 py-10 sm:px-16 sm:py-14 text-[17px] text-stone-900 space-y-4`}
       >
         {bodyBlocks.map((b, i) => (
           <DocBlock key={i} block={b} />
         ))}
         {noteBlocks.length > 0 && (
-          <div className="mt-10 border-t border-slate-200 pt-4 space-y-2">
+          <div className="mt-10 border-t border-stone-200 pt-4 space-y-2">
             {noteBlocks.map((b, i) => (
               <DocBlock key={i} block={b} />
             ))}

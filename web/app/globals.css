@@ -1,23 +1,58 @@
 @import "tailwindcss";
 
-/* The UI is designed light-only for now: pin colors regardless of the
-   system dark-mode preference (otherwise text turns light gray on white
-   cards and disappears). Proper dark theme = future work. */
+/* สารบาญ (Sarabaan) design language
+   — paper-white field, blind-emboss typography, one metallic label band,
+     catalog precision. Light-only by design (matches the printed edition). */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fafaf8; /* paper white */
+  --foreground: #1c1c1a; /* ink */
   color-scheme: light;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-noto-thai);
-  --font-mono: monospace;
+  --font-sans: var(--font-plex-thai);
+  --font-serif: var(--font-serif-thai);
+  --font-mono: var(--font-plex-mono);
+}
+
+/* sealing-wax accent (ตราครั่ง) — the one non-neutral color */
+@theme {
+  --color-seal-50: #faf3f2;
+  --color-seal-100: #f3e2e0;
+  --color-seal-300: #d3a49e;
+  --color-seal-600: #9c3b32;
+  --color-seal-700: #86322b;
+  --color-seal-800: #6e2a24;
+  --color-seal-900: #571f1b;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-noto-thai), sans-serif;
+  font-family: var(--font-plex-thai), sans-serif;
+}
+
+/* the metallic obi band from the printed edition */
+.label-metal {
+  background: linear-gradient(
+    135deg,
+    #d9d9d6 0%,
+    #b6b6b2 30%,
+    #8f8f8b 55%,
+    #c2c2be 80%,
+    #a9a9a5 100%
+  );
+}
+
+/* blind-emboss wordmark (decorative) */
+.embossed {
+  color: #eeeeea;
+  text-shadow:
+    0 1px 0 #ffffff,
+    0 -1px 1px rgba(0, 0, 0, 0.14),
+    0 2px 3px rgba(0, 0, 0, 0.05);
+  letter-spacing: 0.02em;
+  user-select: none;
 }
