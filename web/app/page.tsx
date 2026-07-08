@@ -104,7 +104,8 @@ export default async function Home() {
               <div className="text-sm text-stone-500 flex flex-wrap gap-x-3">
                 <span>{formatThaiDate(e.publishedAt)}</span>
                 <span>
-                  เล่ม {e.volume} ตอนที่ {e.issue} หน้า {e.page}
+                  เล่ม {e.volume} ตอนที่ {e.issue}
+                  {e.page > 0 ? ` หน้า ${e.page}` : ""}
                 </span>
                 {e.act && (
                   <Link href={`/act/${e.act.id}`} className="text-seal-700 hover:underline">

@@ -278,7 +278,7 @@ export default async function ActPage({
                       </div>
                       <div className="text-sm text-stone-500">
                         {formatThaiDate(e.publishedAt)}
-                        {e.volume > 0 && ` · เล่ม ${e.volume} ตอนที่ ${e.issue} ${e.category} หน้า ${e.page}`}
+                        {e.volume > 0 && ` · เล่ม ${e.volume} ตอนที่ ${e.issue} ${e.category}${e.page > 0 ? ` หน้า ${e.page}` : ""}`}
                         {ORIGIN_LABELS[e.origin] && ` · ${ORIGIN_LABELS[e.origin]}`}
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
