@@ -35,8 +35,8 @@ export function CopyCite({ citation, small }: { citation: string; small?: boolea
       }}
       className={
         small
-          ? "text-xs text-slate-500 hover:text-slate-800 hover:underline"
-          : "rounded border border-slate-300 bg-white px-3 py-1.5 text-sm hover:bg-slate-100"
+          ? "text-xs text-stone-500 hover:text-stone-800 hover:underline"
+          : "rounded border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-100"
       }
       title={citation}
     >

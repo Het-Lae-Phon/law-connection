@@ -62,9 +62,9 @@ export default async function EntriesPage({
     <div className="space-y-6">
       <header className="space-y-1">
         <h1 className="text-2xl font-bold">กฎหมายลำดับรองทั้งหมด</h1>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-stone-500">
           กฎกระทรวง ประกาศ ระเบียบ ข้อบังคับ คำสั่ง ฯลฯ — เรียงตามประกาศล่าสุด มองหารายชื่อพระราชบัญญัติทั้งหมด?{" "}
-          <Link href="/acts" className="text-amber-700 hover:underline">
+          <Link href="/acts" className="text-seal-700 hover:underline">
             ดูทะเบียนกฎหมายแม่บท →
           </Link>
         </p>
@@ -78,11 +78,11 @@ export default async function EntriesPage({
             name="q"
             defaultValue={query}
             placeholder="กรองตามชื่อเรื่องในราชกิจจานุเบกษา..."
-            className="flex-1 rounded-lg border border-slate-300 bg-white px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="flex-1 rounded-lg border border-stone-300 bg-white px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-seal-500"
           />
           <button
             type="submit"
-            className="rounded-lg bg-slate-900 text-white px-6 py-2.5 hover:bg-slate-700"
+            className="rounded-lg bg-stone-900 text-white px-6 py-2.5 hover:bg-stone-700"
           >
             กรอง
           </button>
@@ -90,7 +90,7 @@ export default async function EntriesPage({
         <div className="flex flex-wrap gap-2 text-sm">
           <Link
             href={`/entries?q=${encodeURIComponent(query)}`}
-            className={`rounded-full border px-3 py-1 ${!type ? "border-amber-500 bg-amber-50 text-amber-800" : "border-slate-300 bg-white hover:bg-slate-50"}`}
+            className={`rounded-full border px-3 py-1 ${!type ? "border-seal-500 bg-seal-50 text-seal-800" : "border-stone-300 bg-white hover:bg-stone-50"}`}
           >
             ทุกประเภท
           </Link>
@@ -98,31 +98,31 @@ export default async function EntriesPage({
             <Link
               key={t}
               href={`/entries?q=${encodeURIComponent(query)}&type=${encodeURIComponent(t)}`}
-              className={`rounded-full border px-3 py-1 ${type === t ? "border-amber-500 bg-amber-50 text-amber-800" : "border-slate-300 bg-white hover:bg-slate-50"}`}
+              className={`rounded-full border px-3 py-1 ${type === t ? "border-seal-500 bg-seal-50 text-seal-800" : "border-stone-300 bg-white hover:bg-stone-50"}`}
             >
-              {t} <span className="text-slate-400">({countByType.get(t)!.toLocaleString("th-TH")})</span>
+              {t} <span className="text-stone-400">({countByType.get(t)!.toLocaleString("th-TH")})</span>
             </Link>
           ))}
         </div>
       </form>
 
       <section className="space-y-3">
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-stone-500">
           พบ {total.toLocaleString("th-TH")} รายการ
           {totalPages > 1 && ` · หน้า ${page}/${totalPages}`}
         </p>
-        <ul className="divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
+        <ul className="divide-y divide-stone-200 rounded-lg border border-stone-200 bg-white">
           {entries.map((e) => (
             <li key={e.id} className="p-4 space-y-1">
               <div className="flex items-start justify-between gap-4">
                 <div className="font-medium leading-snug">
-                  <Link href={`/entry/${e.id}`} className="hover:text-amber-700 hover:underline">
+                  <Link href={`/entry/${e.id}`} className="hover:text-seal-700 hover:underline">
                     {e.title}
                   </Link>
                 </div>
                 <EntryActions entry={e} />
               </div>
-              <div className="text-sm text-slate-500 flex flex-wrap gap-x-3">
+              <div className="text-sm text-stone-500 flex flex-wrap gap-x-3">
                 <span>{formatThaiDate(e.publishedAt)}</span>
                 {e.volume > 0 && (
                   <span>
@@ -132,7 +132,7 @@ export default async function EntriesPage({
                 {e.origin === "krisdika" && <span>ห้องสมุดกฎหมายกฤษฎีกา</span>}
                 {e.origin === "pdpc" && <span>เว็บไซต์ สคส. (PDPC)</span>}
                 {e.act && (
-                  <Link href={`/act/${e.act.id}`} className="text-amber-700 hover:underline">
+                  <Link href={`/act/${e.act.id}`} className="text-seal-700 hover:underline">
                     ↳ {e.act.fullName}
                   </Link>
                 )}
@@ -145,7 +145,7 @@ export default async function EntriesPage({
             {page > 1 && (
               <Link
                 href={pageUrl(page - 1)}
-                className="rounded border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-100"
+                className="rounded border border-stone-300 bg-white px-3 py-1.5 hover:bg-stone-100"
               >
                 ← ก่อนหน้า
               </Link>
@@ -153,7 +153,7 @@ export default async function EntriesPage({
             {page < totalPages && (
               <Link
                 href={pageUrl(page + 1)}
-                className="rounded border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-100"
+                className="rounded border border-stone-300 bg-white px-3 py-1.5 hover:bg-stone-100"
               >
                 ถัดไป →
               </Link>

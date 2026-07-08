@@ -50,16 +50,16 @@ export default async function SearchPage({
         <SearchBox initialQuery={query} scope={scope} autoFocus />
       </div>
 
-      <div className="inline-flex rounded-lg border border-slate-300 bg-white p-1 text-sm">
+      <div className="inline-flex rounded-lg border border-stone-300 bg-white p-1 text-sm">
         <Link
           href={baseUrl("acts", query, "")}
-          className={`rounded px-4 py-1.5 ${scope === "acts" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}`}
+          className={`rounded px-4 py-1.5 ${scope === "acts" ? "bg-stone-900 text-white" : "text-stone-600 hover:bg-stone-100"}`}
         >
           กฎหมายแม่บท
         </Link>
         <Link
           href={baseUrl("entries", query, "")}
-          className={`rounded px-4 py-1.5 ${scope === "entries" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}`}
+          className={`rounded px-4 py-1.5 ${scope === "entries" ? "bg-stone-900 text-white" : "text-stone-600 hover:bg-stone-100"}`}
         >
           กฎหมายลำดับรอง
         </Link>
@@ -69,7 +69,7 @@ export default async function SearchPage({
         <div className="flex flex-wrap gap-2 text-sm">
           <Link
             href={baseUrl("acts", query, "")}
-            className={`rounded-full border px-3 py-1 ${!type ? "border-amber-500 bg-amber-50 text-amber-800" : "border-slate-300 bg-white hover:bg-slate-50"}`}
+            className={`rounded-full border px-3 py-1 ${!type ? "border-seal-500 bg-seal-50 text-seal-800" : "border-stone-300 bg-white hover:bg-stone-50"}`}
           >
             ทุกประเภท
           </Link>
@@ -77,7 +77,7 @@ export default async function SearchPage({
             <Link
               key={t}
               href={baseUrl("acts", query, t)}
-              className={`rounded-full border px-3 py-1 ${type === t ? "border-amber-500 bg-amber-50 text-amber-800" : "border-slate-300 bg-white hover:bg-slate-50"}`}
+              className={`rounded-full border px-3 py-1 ${type === t ? "border-seal-500 bg-seal-50 text-seal-800" : "border-stone-300 bg-white hover:bg-stone-50"}`}
             >
               {t}
             </Link>
@@ -87,7 +87,7 @@ export default async function SearchPage({
         <div className="flex flex-wrap gap-2 text-sm">
           <Link
             href={baseUrl("entries", query, "")}
-            className={`rounded-full border px-3 py-1 ${!type ? "border-amber-500 bg-amber-50 text-amber-800" : "border-slate-300 bg-white hover:bg-slate-50"}`}
+            className={`rounded-full border px-3 py-1 ${!type ? "border-seal-500 bg-seal-50 text-seal-800" : "border-stone-300 bg-white hover:bg-stone-50"}`}
           >
             ทุกประเภท
           </Link>
@@ -95,7 +95,7 @@ export default async function SearchPage({
             <Link
               key={t}
               href={baseUrl("entries", query, t)}
-              className={`rounded-full border px-3 py-1 ${type === t ? "border-amber-500 bg-amber-50 text-amber-800" : "border-slate-300 bg-white hover:bg-slate-50"}`}
+              className={`rounded-full border px-3 py-1 ${type === t ? "border-seal-500 bg-seal-50 text-seal-800" : "border-stone-300 bg-white hover:bg-stone-50"}`}
             >
               {t}
             </Link>
@@ -125,12 +125,12 @@ function Pagination({
   return (
     <div className="flex gap-2 justify-center text-sm">
       {page > 1 && (
-        <Link href={urlFor(page - 1)} className="rounded border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-100">
+        <Link href={urlFor(page - 1)} className="rounded border border-stone-300 bg-white px-3 py-1.5 hover:bg-stone-100">
           ← ก่อนหน้า
         </Link>
       )}
       {page < totalPages && (
-        <Link href={urlFor(page + 1)} className="rounded border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-100">
+        <Link href={urlFor(page + 1)} className="rounded border border-stone-300 bg-white px-3 py-1.5 hover:bg-stone-100">
           ถัดไป →
         </Link>
       )}
@@ -149,9 +149,9 @@ async function ActsResults({
 }) {
   if (!query && !actType) {
     return (
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-stone-500">
         พิมพ์คำค้นเพื่อค้นหากฎหมายแม่บท หรือ{" "}
-        <Link href="/acts" className="text-amber-700 hover:underline">
+        <Link href="/acts" className="text-seal-700 hover:underline">
           ดูทะเบียนกฎหมายแม่บททั้งหมด →
         </Link>
       </p>
@@ -186,20 +186,20 @@ async function ActsResults({
 
   return (
     <section className="space-y-3">
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-stone-500">
         พบ {total.toLocaleString("th-TH")} รายการ
         {totalPages > 1 && ` · หน้า ${page}/${totalPages}`}
         {ranked && " · เรียงตามความเกี่ยวข้อง"}
       </p>
-      <ul className="divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
+      <ul className="divide-y divide-stone-200 rounded-lg border border-stone-200 bg-white">
         {acts.map((a) => (
           <li key={a.id}>
             <Link
               href={`/act/${a.id}`}
-              className="flex items-baseline justify-between gap-4 p-4 hover:bg-amber-50"
+              className="flex items-baseline justify-between gap-4 p-4 hover:bg-seal-50"
             >
               <span className="font-medium leading-snug">{a.fullName}</span>
-              <span className="shrink-0 text-sm text-slate-500">
+              <span className="shrink-0 text-sm text-stone-500">
                 {a._count.entries.toLocaleString("th-TH")} ฉบับ
               </span>
             </Link>
@@ -222,9 +222,9 @@ async function EntriesResults({
 }) {
   if (!query && !instrumentType) {
     return (
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-stone-500">
         พิมพ์คำค้นเพื่อค้นหากฎหมายลำดับรอง หรือ{" "}
-        <Link href="/entries" className="text-amber-700 hover:underline">
+        <Link href="/entries" className="text-seal-700 hover:underline">
           ดูทะเบียนกฎหมายลำดับรองทั้งหมด →
         </Link>
       </p>
@@ -240,22 +240,22 @@ async function EntriesResults({
 
   return (
     <section className="space-y-3">
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-stone-500">
         พบ {total.toLocaleString("th-TH")} รายการ
         {result.capped && "ขึ้นไป (แสดงเฉพาะที่เกี่ยวข้องที่สุด)"}
         {totalPages > 1 && ` · หน้า ${page}/${totalPages}`}
         {query && " · เรียงตามความเกี่ยวข้อง"}
       </p>
-      <ul className="divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
+      <ul className="divide-y divide-stone-200 rounded-lg border border-stone-200 bg-white">
         {entries.map((e) => (
           <li key={e.id} className="p-4 space-y-1">
             <div className="flex items-start justify-between gap-4">
-              <Link href={`/entry/${e.id}`} className="font-medium leading-snug hover:text-amber-700">
+              <Link href={`/entry/${e.id}`} className="font-medium leading-snug hover:text-seal-700">
                 {e.title}
               </Link>
               <EntryActions entry={e} />
             </div>
-            <div className="text-sm text-slate-500 flex flex-wrap gap-x-3">
+            <div className="text-sm text-stone-500 flex flex-wrap gap-x-3">
               <span>{formatThaiDate(e.publishedAt)}</span>
               {e.volume > 0 && (
                 <span>
@@ -265,7 +265,7 @@ async function EntriesResults({
               {e.origin === "krisdika" && <span>ห้องสมุดกฎหมายกฤษฎีกา</span>}
               {e.origin === "pdpc" && <span>เว็บไซต์ สคส. (PDPC)</span>}
               {e.act && (
-                <Link href={`/act/${e.act.id}`} className="text-amber-700 hover:underline">
+                <Link href={`/act/${e.act.id}`} className="text-seal-700 hover:underline">
                   ↳ {e.act.fullName}
                 </Link>
               )}

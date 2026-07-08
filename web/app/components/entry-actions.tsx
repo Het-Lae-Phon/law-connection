@@ -24,7 +24,7 @@ export function EntryActions({ entry }: { entry: Entry }) {
           href={source.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded bg-slate-900 text-white px-3 py-1.5 text-sm text-center hover:bg-slate-700"
+          className="rounded bg-stone-900 text-white px-3 py-1.5 text-sm text-center hover:bg-stone-700"
           title={`เปิดต้นฉบับ: ${source.url}`}
         >
           ต้นฉบับ · {source.label} ↗
@@ -33,7 +33,7 @@ export function EntryActions({ entry }: { entry: Entry }) {
       {!source && hasText && (
         <Link
           href={`/doc/${entry.id}`}
-          className="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-center hover:bg-slate-100"
+          className="rounded border border-stone-300 bg-white px-3 py-1.5 text-sm text-center hover:bg-stone-100"
           title="สำเนาข้อความสำหรับอ้างอิง — ไม่ใช่ต้นฉบับ"
         >
           สำเนาอ้างอิง

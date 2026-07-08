@@ -1,17 +1,30 @@
 import type { Metadata } from "next";
-import { Noto_Sans_Thai } from "next/font/google";
+import { IBM_Plex_Sans_Thai, IBM_Plex_Mono, Noto_Serif_Thai } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
 
-const notoThai = Noto_Sans_Thai({
-  variable: "--font-noto-thai",
+const plexThai = IBM_Plex_Sans_Thai({
+  variable: "--font-plex-thai",
+  weight: ["400", "500", "600", "700"],
   subsets: ["thai", "latin"],
 });
 
+const serifThai = Noto_Serif_Thai({
+  variable: "--font-serif-thai",
+  weight: ["500", "600", "700"],
+  subsets: ["thai", "latin"],
+});
+
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
+  weight: ["400", "500"],
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
-  title: "กฎหมายเชื่อมโยง — ฐานข้อมูลกฎหมายไทยพร้อมกฎหมายลำดับรอง",
+  title: "สารบาญ Sarabaan — ดัชนีอ้างอิงกฎหมายไทยและกฎหมายลำดับรอง",
   description:
-    "ค้นหาพระราชบัญญัติและกฎหมายลำดับรอง (กฎกระทรวง ประกาศ ระเบียบ) ที่เชื่อมโยงถึงกัน จากข้อมูลราชกิจจานุเบกษา",
+    "สารบาญ: ค้นพระราชบัญญัติและกฎหมายลำดับรอง (กฎกระทรวง ประกาศ ระเบียบ) ที่เชื่อมโยงถึงกัน คัดลอกการอ้างอิงที่ถูกต้อง แล้วไปที่ต้นฉบับ",
 };
 
 export default function RootLayout({
@@ -20,16 +33,27 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="th" className={`${notoThai.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col font-[family-name:var(--font-noto-thai)] bg-slate-50 text-slate-900">
-        <header className="sticky top-0 z-20 bg-slate-900 text-white">
+    <html
+      lang="th"
+      className={`${plexThai.variable} ${serifThai.variable} ${plexMono.variable} h-full antialiased`}
+    >
+      <body className="min-h-full flex flex-col font-[family-name:var(--font-plex-thai)] bg-[#fafaf8] text-stone-900">
+        {/* hairline metallic strip — the obi band of the printed edition */}
+        <div className="label-metal h-1.5" aria-hidden />
+        <header className="sticky top-0 z-20 bg-white border-b border-stone-200">
           <div className="mx-auto max-w-5xl px-4 py-3 flex items-center justify-between gap-4 flex-wrap">
-            <Link href="/" className="text-xl font-bold tracking-tight shrink-0">
-              กฎหมาย<span className="text-amber-400">เชื่อมโยง</span>
+            <Link href="/" className="flex items-center gap-3 group shrink-0">
+              <span className="label-metal text-white px-2.5 py-1 font-[family-name:var(--font-serif-thai)] font-semibold text-lg leading-none [text-shadow:0_1px_1px_rgba(0,0,0,0.35)]">
+                สารบาญ
+              </span>
+              <span className="hidden sm:inline font-[family-name:var(--font-plex-mono)] text-[10px] tracking-[0.25em] text-stone-400 uppercase group-hover:text-stone-600">
+                Sarabaan
+              </span>
             </Link>
+            {/* inline header search (kept from the UX redesign) */}
             <form action="/search" className="order-3 relative w-full sm:order-none sm:w-auto sm:flex-1 sm:max-w-xs">
               <svg
-                className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400"
+                className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -41,35 +65,40 @@ export default function RootLayout({
                 type="text"
                 name="q"
                 placeholder="ค้นหากฎหมาย..."
-                className="w-full rounded-md border border-slate-700 bg-slate-800 pl-8 pr-3 py-1.5 text-sm text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full rounded-md border border-stone-300 bg-stone-50 pl-8 pr-3 py-1.5 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-seal-600"
               />
             </form>
-            <nav className="flex gap-5 text-sm text-slate-300">
-              <Link href="/acts" className="hover:text-white">
+            <nav className="flex gap-5 text-sm text-stone-500">
+              <Link href="/acts" className="hover:text-stone-900">
                 กฎหมายแม่บท
               </Link>
-              <Link href="/entries" className="hover:text-white">
+              <Link href="/entries" className="hover:text-stone-900">
                 กฎหมายลำดับรอง
               </Link>
-              <Link href="/community" className="hover:text-white">
+              <Link href="/community" className="hover:text-stone-900">
                 การตรวจสอบโดยชุมชน
               </Link>
             </nav>
           </div>
         </header>
-        <div className="bg-amber-50 border-b border-amber-200">
-          <div className="mx-auto max-w-5xl px-4 py-2.5 text-sm text-amber-900">
-            ⚠️ การจัดหมวดหมู่และการเชื่อมโยงกฎหมายลำดับรองในเว็บไซต์นี้<b>สร้างโดย AI อัตโนมัติ</b>{" "}
-            อาจมีข้อผิดพลาดหรือตกหล่น — โปรดตรวจสอบกับเอกสารต้นฉบับในราชกิจจานุเบกษาก่อนใช้อ้างอิง
-            และหากท่านเป็นนักกฎหมาย{" "}
-            <Link href="/community" className="underline font-medium hover:text-amber-700">
+        <div className="bg-stone-100 border-b border-stone-200">
+          <div className="mx-auto max-w-5xl px-4 py-2 text-[13px] text-stone-600 leading-relaxed">
+            <span className="font-[family-name:var(--font-plex-mono)] text-[10px] tracking-[0.2em] uppercase text-stone-400 mr-2">
+              Notice
+            </span>
+            การจัดหมวดหมู่และการเชื่อมโยงในเว็บไซต์นี้<b className="text-stone-800">สร้างโดย AI อัตโนมัติ</b>{" "}
+            อาจมีข้อผิดพลาดหรือตกหล่น — โปรดตรวจสอบกับเอกสารต้นฉบับก่อนใช้อ้างอิง หากท่านเป็นนักกฎหมาย{" "}
+            <Link href="/community" className="underline font-medium text-seal-700 hover:text-seal-800">
               ช่วยเรายืนยันความถูกต้องได้ที่นี่
             </Link>
           </div>
         </div>
         <main className="flex-1 mx-auto w-full max-w-5xl px-4 py-8">{children}</main>
-        <footer className="border-t border-slate-200 bg-white">
-          <div className="mx-auto max-w-5xl px-4 py-6 text-sm text-slate-500 space-y-1">
+        <footer className="border-t border-stone-200 bg-white">
+          <div className="mx-auto max-w-5xl px-4 py-6 text-sm text-stone-500 space-y-2">
+            <p className="font-[family-name:var(--font-plex-mono)] text-[10px] tracking-[0.25em] uppercase text-stone-400">
+              สารบาญ · Sarabaan — Thai Law Reference Index
+            </p>
             <p>
               ข้อมูลจาก{" "}
               <a href="https://ratchakitcha.soc.go.th" className="underline">
@@ -80,7 +109,7 @@ export default function RootLayout({
                 data.go.th
               </a>
               ) — ต้นแบบสาธิต การเชื่อมโยงสร้างโดย AI อัตโนมัติและอาจผิดพลาด โปรดตรวจสอบกับเอกสารต้นฉบับก่อนใช้อ้างอิง
-              ทุกการเชื่อมโยงแสดงที่มา (จากชื่อเรื่อง/จากเนื้อหา PDF) และเปิดให้ชุมชนตรวจสอบแก้ไขได้
+              ทุกการเชื่อมโยงแสดงที่มา และเปิดให้ชุมชนตรวจสอบแก้ไขได้
             </p>
           </div>
         </footer>

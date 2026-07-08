@@ -55,23 +55,23 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="space-y-6">
-      <nav className="text-sm text-slate-500">
+      <nav className="text-sm text-stone-500">
         <BackLink fallbackHref="/entries" />
       </nav>
 
       <header className="space-y-3">
         {entry.instrumentType && (
-          <div className="text-sm font-medium text-amber-700">{entry.instrumentType}</div>
+          <div className="text-sm font-medium text-seal-700">{entry.instrumentType}</div>
         )}
         <h1 className="text-xl font-bold leading-snug">
           {entry.title}
           {entry.isAmendment && (
-            <span className="ml-2 inline-block rounded bg-amber-100 text-amber-800 text-xs px-1.5 py-0.5 align-middle">
+            <span className="ml-2 inline-block rounded bg-seal-100 text-seal-800 text-xs px-1.5 py-0.5 align-middle">
               ฉบับแก้ไข
             </span>
           )}
         </h1>
-        <div className="text-sm text-slate-500 flex flex-wrap gap-x-3">
+        <div className="text-sm text-stone-500 flex flex-wrap gap-x-3">
           <span>{formatThaiDate(entry.publishedAt)}</span>
           {entry.volume > 0 && (
             <span>
@@ -83,7 +83,7 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
         {entry.act && (
           <div className="text-sm">
             ออกตามความใน{" "}
-            <Link href={`/act/${entry.act.id}`} className="text-amber-700 hover:underline">
+            <Link href={`/act/${entry.act.id}`} className="text-seal-700 hover:underline">
               {entry.act.fullName}
             </Link>
           </div>
@@ -91,7 +91,7 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
         <div className="flex flex-wrap items-center gap-2 pt-1">
           <VerifyBadge status={entry.verifyStatus} source={entry.linkSource} />
           <details className="text-xs">
-            <summary className="cursor-pointer text-slate-400 hover:text-slate-600 list-none">
+            <summary className="cursor-pointer text-stone-400 hover:text-stone-600 list-none">
               ตรวจสอบความถูกต้อง
             </summary>
             <div className="mt-2 flex flex-wrap items-start gap-3">
@@ -116,18 +116,18 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
                     name="reason"
                     required
                     placeholder="เหตุผล เช่น ออกตามกฎหมายฉบับอื่น..."
-                    className="w-full rounded border border-slate-300 p-2 text-sm"
+                    className="w-full rounded border border-stone-300 p-2 text-sm"
                     rows={2}
                   />
                   <input
                     name="correctAct"
                     placeholder="กฎหมายแม่บทที่ถูกต้อง (ถ้าทราบ)"
-                    className="w-full rounded border border-slate-300 p-2 text-sm"
+                    className="w-full rounded border border-stone-300 p-2 text-sm"
                   />
                   <input
                     name="contributor"
                     placeholder="ชื่อ/สังกัด (ไม่บังคับ)"
-                    className="w-full rounded border border-slate-300 p-2 text-sm"
+                    className="w-full rounded border border-stone-300 p-2 text-sm"
                   />
                   <button className="rounded bg-red-700 text-white px-3 py-1.5">
                     ส่งข้อโต้แย้ง
@@ -139,7 +139,7 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
         </div>
       </header>
 
-      <section className="rounded-lg border border-slate-300 bg-white p-4 text-sm space-y-3">
+      <section className="rounded-lg border border-stone-300 bg-white p-4 text-sm space-y-3">
         <div className="font-bold">การอ้างอิงและต้นฉบับ</div>
         <div className="flex flex-wrap gap-2">
           <CopyCite citation={buildCitation(entry)} />
@@ -148,7 +148,7 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
               href={source.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded bg-slate-900 text-white px-3 py-1.5 text-sm hover:bg-slate-700"
+              className="rounded bg-stone-900 text-white px-3 py-1.5 text-sm hover:bg-stone-700"
             >
               เปิดต้นฉบับ · {source.label} ↗
             </a>
@@ -156,7 +156,7 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
           {!source && hasText && (
             <Link
               href={`/doc/${entry.id}`}
-              className="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm hover:bg-slate-100"
+              className="rounded border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-100"
               title="สำเนาข้อความสำหรับอ้างอิง — ไม่ใช่ต้นฉบับ"
             >
               อ่านสำเนาข้อความเต็ม →
@@ -164,13 +164,13 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
           )}
         </div>
         {!source && !hasText && entry.volume > 0 && (
-          <p className="text-slate-500">
+          <p className="text-stone-500">
             ยังไม่มีลิงก์ต้นฉบับที่ใช้งานได้ในระบบ — ค้นหาฉบับ PDF ได้ที่{" "}
             <a
               href="https://ratchakitcha.soc.go.th"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-amber-700 underline"
+              className="text-seal-700 underline"
             >
               ratchakitcha.soc.go.th
             </a>{" "}

@@ -21,7 +21,7 @@ export function VerifyBadge({ status, source }: { status: string; source: string
   const how = (source && SOURCE_LABELS[source]) || "";
   return (
     <span
-      className="inline-block rounded bg-slate-100 text-slate-600 text-xs px-1.5 py-0.5"
+      className="inline-block rounded bg-stone-100 text-stone-600 text-xs px-1.5 py-0.5"
       title="สร้างโดยระบบ ยังไม่ได้รับการยืนยันโดยผู้เชี่ยวชาญ"
     >
       ⚙ เชื่อมโยงอัตโนมัติ{how && ` (${how})`}
