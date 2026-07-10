@@ -11,6 +11,7 @@ import { buildCitation, originalSource } from "@/lib/cite";
 import { GROUP_ORDER, GROUP_LABELS } from "@/lib/instrument-labels";
 import { SectionTree } from "@/app/components/section-tree";
 import { VersionTimeline } from "@/app/components/version-timeline";
+import { CodeTimeline, codeTimelineFor } from "@/app/components/code-timeline";
 
 // Thai government domains get an "official" badge on source links
 function isGovDomain(url: string): boolean {
@@ -275,10 +276,19 @@ export default async function ActPage({
         </details>
       </section>
 
-      <VersionTimeline
-        primaries={primaries}
-        repealedBy={act.status === "repealed" ? act.repealedBy : null}
-      />
+      {/* codes get the official OCS amendment history; other acts use the
+          timeline derived from the gazette editions we hold */}
+      {(() => {
+        const codeTl = act.actType === "ประมวลกฎหมาย" ? codeTimelineFor(act.shortName) : null;
+        return codeTl ? (
+          <CodeTimeline data={codeTl} />
+        ) : (
+          <VersionTimeline
+            primaries={primaries}
+            repealedBy={act.status === "repealed" ? act.repealedBy : null}
+          />
+        );
+      })()}
 
       {/* view toggle: type-grouped list ↔ word-tree by authorising section */}
       {subCount > 0 && (
