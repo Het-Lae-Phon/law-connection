@@ -9,6 +9,7 @@ import { VerifyBadge } from "@/app/components/verify-badge";
 import { BackLink } from "@/app/components/back-link";
 import { buildCitation, originalSource } from "@/lib/cite";
 import { GROUP_ORDER, GROUP_LABELS } from "@/lib/instrument-labels";
+import { SectionTree } from "@/app/components/section-tree";
 
 // Thai government domains get an "official" badge on source links
 function isGovDomain(url: string): boolean {
@@ -35,7 +36,7 @@ export default async function ActPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ type?: string; page?: string }>;
+  searchParams: Promise<{ type?: string; page?: string; view?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
@@ -45,6 +46,8 @@ export default async function ActPage({
   // single-group drilldown view (?type=ประกาศ) — paginated
   const filterType = (sp.type ?? "").trim() || null;
   const page = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
+  // ?view=tree — word-tree branched by authorising section (มาตรา)
+  const treeView = sp.view === "tree";
 
   const act = await prisma.act.findUnique({
     where: { id: actId },
@@ -82,15 +85,36 @@ export default async function ActPage({
 
   // fetch entries per group (limited), or one paginated group in drilldown mode
   const groups = new Map<string, Awaited<ReturnType<typeof prisma.gazetteEntry.findMany>>>();
-  for (const key of orderedKeys) {
-    const list = await prisma.gazetteEntry.findMany({
-      where: { actId, instrumentType: key === "อื่น ๆ" ? null : key },
-      orderBy: { publishedAt: { sort: "desc", nulls: "last" } },
-      take: filterType ? PER_PAGE : PER_GROUP,
-      skip: filterType ? (page - 1) * PER_PAGE : 0,
-    });
-    if (list.length) groups.set(key, list);
+  if (!treeView) {
+    for (const key of orderedKeys) {
+      const list = await prisma.gazetteEntry.findMany({
+        where: { actId, instrumentType: key === "อื่น ๆ" ? null : key },
+        orderBy: { publishedAt: { sort: "desc", nulls: "last" } },
+        take: filterType ? PER_PAGE : PER_GROUP,
+        skip: filterType ? (page - 1) * PER_PAGE : 0,
+      });
+      if (list.length) groups.set(key, list);
+    }
   }
+
+  // tree view: all non-primary entries, branched by section in the component
+  const treeEntries = treeView
+    ? await prisma.gazetteEntry.findMany({
+        where: { actId, isPrimary: false },
+        orderBy: { publishedAt: { sort: "desc", nulls: "last" } },
+        select: {
+          id: true,
+          title: true,
+          instrumentType: true,
+          legalBasis: true,
+          publishedAt: true,
+          volume: true,
+          issue: true,
+          category: true,
+          page: true,
+        },
+      })
+    : [];
 
   return (
     <div className="space-y-8">
@@ -207,13 +231,38 @@ export default async function ActPage({
         </details>
       </section>
 
-      {groups.size === 0 && (
+      {/* view toggle: type-grouped list ↔ word-tree by authorising section */}
+      {subCount > 0 && (
+        <div className="inline-flex rounded-lg border border-stone-300 bg-white p-1 text-sm">
+          <Link
+            href={`/act/${act.id}`}
+            className={`rounded px-4 py-1.5 ${!treeView ? "bg-stone-900 text-white" : "text-stone-600 hover:bg-stone-100"}`}
+          >
+            รายการตามประเภท
+          </Link>
+          <Link
+            href={`/act/${act.id}?view=tree`}
+            className={`rounded px-4 py-1.5 ${treeView ? "bg-stone-900 text-white" : "text-stone-600 hover:bg-stone-100"}`}
+          >
+            ต้นไม้ตามมาตรา
+          </Link>
+        </div>
+      )}
+
+      {treeView && (
+        <section className="rounded-lg border border-dashed border-stone-300 bg-white p-5 sm:p-8 overflow-x-auto">
+          <p className="cat-code mb-4">AUTHORITY&nbsp;TREE&nbsp;·&nbsp;โครงสร้างสายอำนาจตามมาตรา</p>
+          <SectionTree actName={act.shortName} entries={treeEntries} />
+        </section>
+      )}
+
+      {!treeView && groups.size === 0 && (
         <p className="text-stone-500">
           ยังไม่มีประกาศที่เชื่อมโยงกับกฎหมายฉบับนี้ในช่วงข้อมูลที่มี
         </p>
       )}
 
-      {!filterType && groups.size > 1 && (
+      {!treeView && !filterType && groups.size > 1 && (
         <nav className="sticky top-0 z-10 -mx-4 border-b border-stone-200 bg-stone-50/95 px-4 py-2 backdrop-blur">
           <ul className="flex flex-wrap gap-2 text-sm">
             {orderedKeys.filter((k) => groups.has(k)).map((key) => (
