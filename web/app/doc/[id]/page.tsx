@@ -102,9 +102,14 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
         <h1 className="text-xl font-bold leading-snug">{entry.title}</h1>
         <div className="text-sm text-stone-500 flex flex-wrap gap-x-3">
           <span>{formatThaiDate(entry.publishedAt)}</span>
-          <span>ที่มาของสำเนา: ห้องสมุดกฎหมาย สำนักงานคณะกรรมการกฤษฎีกา</span>
+          <span>
+            ที่มาของสำเนา:{" "}
+            {entry.origin === "ocs"
+              ? "ระบบค้นหากฎหมาย สำนักงานคณะกรรมการกฤษฎีกา (ฉบับปรับปรุงล่าสุด)"
+              : "ห้องสมุดกฎหมาย สำนักงานคณะกรรมการกฤษฎีกา"}
+          </span>
         </div>
-        {entry.act && (
+        {entry.act && !entry.isPrimary && (
           <div className="text-sm">
             ออกตามความใน{" "}
             <Link href={`/act/${entry.act.id}`} className="text-seal-700 hover:underline">
@@ -127,7 +132,9 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
               rel="noopener noreferrer"
               className="inline-block rounded bg-stone-900 text-white px-3 py-1.5 hover:bg-stone-700"
             >
-              เปิดต้นฉบับ PDF ในราชกิจจานุเบกษา ↗
+              {entry.origin === "ocs"
+                ? "เปิดตัวบทฉบับทางการ (ระบบค้นหากฎหมาย สคก.) ↗"
+                : "เปิดต้นฉบับ PDF ในราชกิจจานุเบกษา ↗"}
             </a>
           </p>
         ) : entry.volume > 0 ? (

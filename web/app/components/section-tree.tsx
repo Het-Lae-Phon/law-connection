@@ -75,14 +75,17 @@ export function SectionTree({ actName, entries }: { actName: string; entries: Tr
 
   return (
     <div className="space-y-0">
-      {/* root node */}
-      <div className="flex items-center gap-3">
-        <span className="label-metal text-white px-2.5 py-1 text-sm font-semibold [text-shadow:0_1px_1px_rgba(0,0,0,0.35)]">
-          {actName}
-        </span>
-        <span className="cat-code">
-          {sorted.length}&nbsp;มาตรา&nbsp;·&nbsp;{entries.length}&nbsp;ฉบับ
-        </span>
+      {/* root node — the parent act, children branch off by authorising section */}
+      <div className="space-y-1">
+        <p className="cat-code">กฎหมายแม่บท&nbsp;·&nbsp;PARENT&nbsp;ACT</p>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="label-metal text-white px-2.5 py-1 text-sm font-semibold [text-shadow:0_1px_1px_rgba(0,0,0,0.35)]">
+            {actName}
+          </span>
+          <span className="cat-code">
+            {sorted.length}&nbsp;มาตรา&nbsp;·&nbsp;กฎหมายลูก&nbsp;{entries.length}&nbsp;ฉบับ
+          </span>
+        </div>
       </div>
 
       <div className="ml-3 border-l border-dashed border-stone-300 pl-5 pt-3 space-y-2">
@@ -93,7 +96,7 @@ export function SectionTree({ actName, entries }: { actName: string; entries: Tr
               <span className="font-semibold text-stone-800 group-open:text-seal-800">
                 {section}
               </span>
-              <span className="cat-code">{g.entries.length}&nbsp;ฉบับ</span>
+              <span className="cat-code">กฎหมายลูก&nbsp;{g.entries.length}&nbsp;ฉบับ</span>
             </summary>
             <ul className="ml-2 border-l border-dashed border-stone-200 pl-4 py-1 space-y-2">
               {g.entries.map((e) => (

@@ -63,7 +63,7 @@ export default async function ActPage({
   });
   if (!act) notFound();
 
-  const [typeCounts, subCount, verifiedCount, primaryEntry, primaries] = await Promise.all([
+  const [typeCounts, subCount, verifiedCount, primaryEntry, primaries, textEntry] = await Promise.all([
     prisma.gazetteEntry.groupBy({
       by: ["instrumentType"],
       where: { actId },
@@ -88,6 +88,12 @@ export default async function ActPage({
         page: true,
         isAmendment: true,
       },
+    }),
+    // full text readable on-site (e.g. ประมวลกฎหมาย imported from OCS)
+    prisma.gazetteEntry.findFirst({
+      where: { actId, isPrimary: true, documentText: { isNot: null } },
+      orderBy: { id: "desc" },
+      select: { id: true },
     }),
   ]);
   const countByType = new Map(typeCounts.map((t) => [t.instrumentType ?? "อื่น ๆ", t._count]));
@@ -167,6 +173,14 @@ export default async function ActPage({
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
           <CopyCite citation={primaryEntry ? buildCitation(primaryEntry) : act.fullName} />
+          {textEntry && (
+            <Link
+              href={`/doc/${textEntry.id}`}
+              className="rounded bg-seal-700 text-white px-3 py-1.5 text-sm hover:bg-seal-800"
+            >
+              อ่านตัวบทฉบับเต็ม
+            </Link>
+          )}
           {primaryEntry &&
             (() => {
               const source = originalSource(primaryEntry);
@@ -287,7 +301,7 @@ export default async function ActPage({
       {treeView && (
         <section className="rounded-lg border border-dashed border-stone-300 bg-white p-5 sm:p-8 overflow-x-auto">
           <p className="cat-code mb-4">AUTHORITY&nbsp;TREE&nbsp;·&nbsp;โครงสร้างสายอำนาจตามมาตรา</p>
-          <SectionTree actName={act.shortName} entries={treeEntries} />
+          <SectionTree actName={act.fullName} entries={treeEntries} />
         </section>
       )}
 
@@ -362,7 +376,7 @@ export default async function ActPage({
                       </div>
                       <div className="text-sm text-stone-500">
                         {formatThaiDate(e.publishedAt)}
-                        {e.volume > 0 && ` · เล่ม ${e.volume} ตอนที่ ${e.issue} ${e.category} หน้า ${e.page}`}
+                        {e.volume > 0 && ` · เล่ม ${e.volume} ตอนที่ ${e.issue} ${e.category}${e.page > 0 ? ` หน้า ${e.page}` : ""}`}
                         {ORIGIN_LABELS[e.origin] && ` · ${ORIGIN_LABELS[e.origin]}`}
                       </div>
                       {e.legalBasis && (
