@@ -10,6 +10,7 @@ import { BackLink } from "@/app/components/back-link";
 import { buildCitation, originalSource } from "@/lib/cite";
 import { GROUP_ORDER, GROUP_LABELS } from "@/lib/instrument-labels";
 import { SectionTree } from "@/app/components/section-tree";
+import { VersionTimeline } from "@/app/components/version-timeline";
 
 // Thai government domains get an "official" badge on source links
 function isGovDomain(url: string): boolean {
@@ -52,6 +53,7 @@ export default async function ActPage({
   const act = await prisma.act.findUnique({
     where: { id: actId },
     include: {
+      repealedBy: { select: { id: true, fullName: true } },
       contributions: {
         where: { type: "comment", status: { not: "rejected" } },
         orderBy: { createdAt: "desc" },
@@ -61,7 +63,7 @@ export default async function ActPage({
   });
   if (!act) notFound();
 
-  const [typeCounts, subCount, verifiedCount, primaryEntry] = await Promise.all([
+  const [typeCounts, subCount, verifiedCount, primaryEntry, primaries] = await Promise.all([
     prisma.gazetteEntry.groupBy({
       by: ["instrumentType"],
       where: { actId },
@@ -72,6 +74,20 @@ export default async function ActPage({
     prisma.gazetteEntry.findFirst({
       where: { actId, isPrimary: true, isAmendment: false, volume: { gt: 0 } },
       orderBy: { publishedAt: "asc" },
+    }),
+    prisma.gazetteEntry.findMany({
+      where: { actId, isPrimary: true },
+      orderBy: { publishedAt: { sort: "asc", nulls: "last" } },
+      select: {
+        id: true,
+        title: true,
+        publishedAt: true,
+        volume: true,
+        issue: true,
+        category: true,
+        page: true,
+        isAmendment: true,
+      },
     }),
   ]);
   const countByType = new Map(typeCounts.map((t) => [t.instrumentType ?? "อื่น ๆ", t._count]));
@@ -130,6 +146,20 @@ export default async function ActPage({
       <header className="space-y-2">
         <div className="text-sm font-medium text-seal-700">{act.actType}</div>
         <h1 className="text-2xl font-bold leading-snug">{act.fullName}</h1>
+        {act.status === "repealed" && (
+          <div className="rounded border border-seal-300 bg-seal-50 px-3 py-2 text-sm text-seal-900">
+            <b>ยกเลิกแล้ว</b>
+            {act.repealedBy && (
+              <>
+                {" — โดย "}
+                <Link href={`/act/${act.repealedBy.id}`} className="font-medium underline hover:text-seal-700">
+                  {act.repealedBy.fullName}
+                </Link>
+              </>
+            )}
+            {" · ข้อมูลคงไว้เพื่อการอ้างอิงย้อนหลัง"}
+          </div>
+        )}
         <p className="text-stone-500 text-sm">
           กฎหมายลำดับรองและฉบับที่เกี่ยวข้องในระบบ {subCount.toLocaleString("th-TH")} ฉบับ
           {verifiedCount > 0 && ` · ยืนยันโดยชุมชนแล้ว ${verifiedCount.toLocaleString("th-TH")} ฉบับ`}{" "}
@@ -230,6 +260,11 @@ export default async function ActPage({
           </form>
         </details>
       </section>
+
+      <VersionTimeline
+        primaries={primaries}
+        repealedBy={act.status === "repealed" ? act.repealedBy : null}
+      />
 
       {/* view toggle: type-grouped list ↔ word-tree by authorising section */}
       {subCount > 0 && (
