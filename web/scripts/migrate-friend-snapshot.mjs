@@ -85,6 +85,7 @@ async function main() {
         actId: r.actId,
         linkSource: r.linkSource,
         verifyStatus: r.verifyStatus,
+        legalBasis: r.legalBasis,
       })),
       skipDuplicates: true,
     })

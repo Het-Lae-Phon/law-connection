@@ -281,6 +281,11 @@ export default async function ActPage({
                         {e.volume > 0 && ` · เล่ม ${e.volume} ตอนที่ ${e.issue} ${e.category} หน้า ${e.page}`}
                         {ORIGIN_LABELS[e.origin] && ` · ${ORIGIN_LABELS[e.origin]}`}
                       </div>
+                      {e.legalBasis && (
+                        <div className="text-xs text-stone-400">
+                          ออกตามความใน {e.legalBasis}
+                        </div>
+                      )}
                       <div className="flex flex-wrap items-center gap-2">
                         <VerifyBadge status={e.verifyStatus} source={e.linkSource} />
                         <details className="text-xs">

@@ -82,11 +82,14 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
         </div>
         {entry.act && (
           <div className="text-sm">
-            ออกตามความใน{" "}
+            ออกตามความใน{entry.legalBasis ? ` ${entry.legalBasis} แห่ง` : ""}{" "}
             <Link href={`/act/${entry.act.id}`} className="text-seal-700 hover:underline">
               {entry.act.fullName}
             </Link>
           </div>
+        )}
+        {!entry.act && entry.legalBasis && (
+          <div className="text-sm text-stone-600">ออกตามความใน {entry.legalBasis}</div>
         )}
         <div className="flex flex-wrap items-center gap-2 pt-1">
           <VerifyBadge status={entry.verifyStatus} source={entry.linkSource} />

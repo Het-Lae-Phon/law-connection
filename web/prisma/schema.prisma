@@ -63,6 +63,7 @@ model GazetteEntry {
   act            Act?     @relation(fields: [actId], references: [id])
   linkSource     String? // how actId was derived: "title" | "pdf" | "community"
   verifyStatus   String   @default("machine") // machine | verified | disputed
+  legalBasis     String? // authorising section(s) from the preamble, e.g. "มาตรา ๔"
   contributions  Contribution[]
   documentText   DocumentText?
 
