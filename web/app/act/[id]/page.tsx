@@ -73,12 +73,14 @@ export default async function ActPage({
   ]);
   const countByType = new Map(typeCounts.map((t) => [t.instrumentType ?? "อื่น ๆ", t._count]));
 
-  const orderedKeys = filterType
-    ? [filterType]
-    : [
-        ...GROUP_ORDER.filter((k) => countByType.has(k)),
-        ...[...countByType.keys()].filter((k) => !GROUP_ORDER.includes(k)),
-      ];
+  // full type list regardless of the current filter, so the nav bar always
+  // shows every type — only the fetched/rendered groups below narrow to one
+  // when filterType is set.
+  const allKeys = [
+    ...GROUP_ORDER.filter((k) => countByType.has(k)),
+    ...[...countByType.keys()].filter((k) => !GROUP_ORDER.includes(k)),
+  ];
+  const orderedKeys = filterType ? [filterType] : allKeys;
 
   // fetch entries per group (limited), or one paginated group in drilldown mode
   const groups = new Map<string, Awaited<ReturnType<typeof prisma.gazetteEntry.findMany>>>();
@@ -213,30 +215,30 @@ export default async function ActPage({
         </p>
       )}
 
-      {!filterType && groups.size > 1 && (
+      {allKeys.length > 1 && (
         <nav className="sticky top-0 z-10 -mx-4 border-b border-stone-200 bg-stone-50/95 px-4 py-2 backdrop-blur">
           <ul className="flex flex-wrap gap-2 text-sm">
-            {orderedKeys.filter((k) => groups.has(k)).map((key) => (
-              <li key={key}>
-                <a
-                  href={`#group-${key}`}
-                  className="inline-block rounded-full border border-stone-300 bg-white px-3 py-1 text-stone-700 hover:border-seal-300 hover:text-seal-800"
-                >
-                  {GROUP_LABELS[key] ?? key}{" "}
-                  <span className="text-stone-400">({(countByType.get(key) ?? 0).toLocaleString("th-TH")})</span>
-                </a>
-              </li>
-            ))}
+            {allKeys.map((key) => {
+              const selected = filterType === key;
+              return (
+                <li key={key}>
+                  <Link
+                    href={selected ? `/act/${act.id}` : `/act/${act.id}?type=${encodeURIComponent(key)}`}
+                    className={
+                      selected
+                        ? "inline-flex items-center gap-1 rounded-full border border-seal-500 bg-seal-50 px-3 py-1 text-seal-800"
+                        : "inline-block rounded-full border border-stone-300 bg-white px-3 py-1 text-stone-700 hover:border-seal-300 hover:text-seal-800"
+                    }
+                  >
+                    {GROUP_LABELS[key] ?? key}{" "}
+                    <span className="text-stone-400">({(countByType.get(key) ?? 0).toLocaleString("th-TH")})</span>
+                    {selected && <span className="ml-0.5">✕</span>}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </nav>
-      )}
-
-      {filterType && (
-        <p className="text-sm">
-          <Link href={`/act/${act.id}`} className="text-seal-700 hover:underline">
-            ← กลับไปหน้ารวมทุกประเภท
-          </Link>
-        </p>
       )}
 
       {orderedKeys.filter((k) => groups.has(k)).map((key) => {

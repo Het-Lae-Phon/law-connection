@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { formatThaiDate } from "@/lib/format";
 import { EntryActions } from "@/app/components/entry-actions";
+import { TypeFilterForm } from "@/app/components/type-filter-form";
 
 export const dynamic = "force-dynamic";
 
@@ -70,41 +71,16 @@ export default async function EntriesPage({
         </p>
       </header>
 
-      <form className="space-y-3">
-        <input type="hidden" name="type" value={type} />
-        <div className="flex max-w-2xl gap-2">
-          <input
-            type="text"
-            name="q"
-            defaultValue={query}
-            placeholder="กรองตามชื่อเรื่องในราชกิจจานุเบกษา..."
-            className="flex-1 rounded-lg border border-stone-300 bg-white px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-seal-500"
-          />
-          <button
-            type="submit"
-            className="rounded-lg bg-stone-900 text-white px-6 py-2.5 hover:bg-stone-700"
-          >
-            กรอง
-          </button>
-        </div>
-        <div className="flex flex-wrap gap-2 text-sm">
-          <Link
-            href={`/entries?q=${encodeURIComponent(query)}`}
-            className={`rounded-full border px-3 py-1 ${!type ? "border-seal-500 bg-seal-50 text-seal-800" : "border-stone-300 bg-white hover:bg-stone-50"}`}
-          >
-            ทุกประเภท
-          </Link>
-          {TYPE_FILTERS.filter((t) => countByType.has(t)).map((t) => (
-            <Link
-              key={t}
-              href={`/entries?q=${encodeURIComponent(query)}&type=${encodeURIComponent(t)}`}
-              className={`rounded-full border px-3 py-1 ${type === t ? "border-seal-500 bg-seal-50 text-seal-800" : "border-stone-300 bg-white hover:bg-stone-50"}`}
-            >
-              {t} <span className="text-stone-400">({countByType.get(t)!.toLocaleString("th-TH")})</span>
-            </Link>
-          ))}
-        </div>
-      </form>
+      <TypeFilterForm
+        basePath="/entries"
+        query={query}
+        selectedType={type}
+        searchPlaceholder="กรองตามชื่อเรื่องในราชกิจจานุเบกษา..."
+        options={TYPE_FILTERS.filter((t) => countByType.has(t)).map((t) => ({
+          value: t,
+          count: countByType.get(t)!,
+        }))}
+      />
 
       <section className="space-y-3">
         <p className="text-sm text-stone-500">

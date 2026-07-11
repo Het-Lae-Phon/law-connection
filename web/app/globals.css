@@ -28,6 +28,16 @@
   --color-seal-900: #571f1b;
 }
 
+/* กฎหมายแม่บท (act type) wayfinding hues — muted, ink/wax-toned so they read
+   as archival index tabs rather than a rainbow, keeping seal as the one loud
+   accent (used here for รัฐธรรมนูญ, the exceptional/highest-authority case). */
+@theme {
+  --color-type-act: #5b6b7a; /* พระราชบัญญัติ — ink-blue, the everyday act */
+  --color-type-decree: #a8823d; /* พระราชกำหนด — aged gold, urgency/emergency */
+  --color-type-organic: #6b5470; /* พระราชบัญญัติประกอบรัฐธรรมนูญ — muted plum */
+  --color-type-code: #5f7a5f; /* ประมวลกฎหมาย — sage, codified body */
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

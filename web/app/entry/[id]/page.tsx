@@ -8,6 +8,7 @@ import { confirmLink, disputeLink } from "@/lib/actions";
 import { CopyCite } from "@/app/components/copy-cite";
 import { VerifyBadge } from "@/app/components/verify-badge";
 import { BackLink } from "@/app/components/back-link";
+import { TypesetDocument } from "@/app/components/typeset-document";
 
 export const dynamic = "force-dynamic";
 
@@ -153,15 +154,6 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
               เปิดต้นฉบับ · {source.label} ↗
             </a>
           )}
-          {!source && hasText && (
-            <Link
-              href={`/doc/${entry.id}`}
-              className="rounded border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-100"
-              title="สำเนาข้อความสำหรับอ้างอิง — ไม่ใช่ต้นฉบับ"
-            >
-              อ่านสำเนาข้อความเต็ม →
-            </Link>
-          )}
         </div>
         {!source && !hasText && entry.volume > 0 && (
           <p className="text-stone-500">
@@ -178,6 +170,8 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
           </p>
         )}
       </section>
+
+      {!source && hasText && <TypesetDocument text={entry.documentText!.text} />}
     </div>
   );
 }

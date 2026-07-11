@@ -32,7 +32,7 @@ export function EntryActions({ entry }: { entry: Entry }) {
       )}
       {!source && hasText && (
         <Link
-          href={`/doc/${entry.id}`}
+          href={`/entry/${entry.id}`}
           className="rounded border border-stone-300 bg-white px-3 py-1.5 text-sm text-center hover:bg-stone-100"
           title="สำเนาข้อความสำหรับอ้างอิง — ไม่ใช่ต้นฉบับ"
         >

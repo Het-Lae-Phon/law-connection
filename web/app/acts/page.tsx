@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
+import { actTypeStyle } from "@/lib/act-type-colors";
+import { TypeFilterForm } from "@/app/components/type-filter-form";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +45,11 @@ export default async function ActsPage({
       skip: (page - 1) * PER_PAGE,
       take: PER_PAGE,
     }),
-    prisma.act.groupBy({ by: ["actType"], _count: true }),
+    prisma.act.groupBy({
+      by: ["actType"],
+      _count: true,
+      where: query ? { fullName: { contains: query } } : undefined,
+    }),
   ]);
   const countByType = new Map(typeCounts.map((t) => [t.actType, t._count]));
   const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
@@ -53,45 +59,24 @@ export default async function ActsPage({
   return (
     <div className="space-y-6">
       <header className="space-y-1">
-        <h1 className="text-2xl font-bold">กฎหมายแม่บททั้งหมด</h1>
+        <h1 className="text-2xl font-bold font-[family-name:var(--font-serif-thai)]">กฎหมายแม่บททั้งหมด</h1>
         <p className="text-sm text-stone-500">
           ทะเบียนนี้สร้างอัตโนมัติจากประกาศในราชกิจจานุเบกษาและการอ้างอิงในกฎหมายลำดับรอง —
           ไม่ต้องคัดกรองล่วงหน้า
         </p>
       </header>
 
-      <form className="space-y-3">
-        <input type="hidden" name="type" value={actType} />
-        <div className="flex max-w-xl gap-2">
-          <input
-            type="text"
-            name="q"
-            defaultValue={query}
-            placeholder="กรองตามชื่อกฎหมาย เช่น ภาษี, แรงงาน..."
-            className="flex-1 rounded-lg border border-stone-300 bg-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-seal-500"
-          />
-          <button type="submit" className="rounded-lg bg-stone-900 text-white px-5 py-2 hover:bg-stone-700">
-            กรอง
-          </button>
-        </div>
-        <div className="flex flex-wrap gap-2 text-sm">
-          <Link
-            href={`/acts?q=${encodeURIComponent(query)}`}
-            className={`rounded-full border px-3 py-1 ${!actType ? "border-seal-500 bg-seal-50 text-seal-800" : "border-stone-300 bg-white hover:bg-stone-50"}`}
-          >
-            ทุกประเภท
-          </Link>
-          {ACT_TYPES.filter((t) => countByType.has(t)).map((t) => (
-            <Link
-              key={t}
-              href={`/acts?q=${encodeURIComponent(query)}&type=${encodeURIComponent(t)}`}
-              className={`rounded-full border px-3 py-1 ${actType === t ? "border-seal-500 bg-seal-50 text-seal-800" : "border-stone-300 bg-white hover:bg-stone-50"}`}
-            >
-              {t} <span className="text-stone-400">({countByType.get(t)})</span>
-            </Link>
-          ))}
-        </div>
-      </form>
+      <TypeFilterForm
+        basePath="/acts"
+        query={query}
+        selectedType={actType}
+        searchPlaceholder="กรองตามชื่อกฎหมาย เช่น ภาษี, แรงงาน..."
+        options={ACT_TYPES.filter((t) => countByType.has(t)).map((t) => ({
+          value: t,
+          count: countByType.get(t)!,
+          dotClass: actTypeStyle(t).dot,
+        }))}
+      />
 
       <p className="text-sm text-stone-500">
         พบ {total.toLocaleString("th-TH")} รายการ เรียงตามจำนวนฉบับที่เชื่อมโยง
@@ -103,21 +88,36 @@ export default async function ActsPage({
         </Link>
       </p>
 
-      <ul className="divide-y divide-stone-200 rounded-lg border border-stone-200 bg-white">
-        {acts.map((a) => (
-          <li key={a.id}>
+      <div>
+        <div className="grid grid-cols-[auto_1fr_auto] gap-4 border-b border-stone-300 pb-2 font-[family-name:var(--font-plex-mono)] text-[10px] tracking-[0.12em] text-stone-400 uppercase">
+          <span>/ ประเภท</span>
+          <span>/ ชื่อกฎหมาย</span>
+          <span>/ ฉบับที่เชื่อมโยง</span>
+        </div>
+        {acts.map((a) => {
+          const style = actTypeStyle(a.actType);
+          return (
             <Link
+              key={a.id}
               href={`/act/${a.id}`}
-              className="flex items-baseline justify-between gap-4 p-4 hover:bg-seal-50"
+              className="grid grid-cols-[auto_1fr_auto] items-center gap-4 rule-dashed py-5 hover:bg-seal-50/40"
             >
-              <span className="font-medium leading-snug">{a.fullName}</span>
-              <span className="shrink-0 text-sm text-stone-500">
-                {a._count.entries.toLocaleString("th-TH")} ฉบับ
+              <span className={`size-2.5 shrink-0 rounded-full ${style.dot}`} />
+              <span className="min-w-0 truncate text-lg font-medium">{a.fullName}</span>
+              <span className="flex shrink-0 items-center gap-3">
+                <span
+                  className={`border border-dashed border-stone-300 px-2 py-0.5 font-[family-name:var(--font-plex-mono)] text-[10px] tracking-[0.1em] uppercase ${style.text}`}
+                >
+                  {a.actType}
+                </span>
+                <span className="text-sm text-stone-500">
+                  {a._count.entries.toLocaleString("th-TH")} ฉบับ
+                </span>
               </span>
             </Link>
-          </li>
-        ))}
-      </ul>
+          );
+        })}
+      </div>
 
       {totalPages > 1 && (
         <div className="flex gap-2 justify-center text-sm">
