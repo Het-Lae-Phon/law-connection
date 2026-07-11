@@ -12,6 +12,7 @@ import { GROUP_ORDER, GROUP_LABELS } from "@/lib/instrument-labels";
 import { SectionTree } from "@/app/components/section-tree";
 import { VersionTimeline } from "@/app/components/version-timeline";
 import { CodeTimeline, codeTimelineFor } from "@/app/components/code-timeline";
+import { BookIndex, codeBooksFor } from "@/app/components/book-index";
 
 // Thai government domains get an "official" badge on source links
 function isGovDomain(url: string): boolean {
@@ -275,6 +276,11 @@ export default async function ActPage({
           </form>
         </details>
       </section>
+
+      {/* geometric บรรพ index (สารบาญ visual language) for codes that have one */}
+      {act.actType === "ประมวลกฎหมาย" && codeBooksFor(act.shortName) && (
+        <BookIndex shortName={act.shortName} emblemName={act.fullName} docId={textEntry?.id} />
+      )}
 
       {/* codes get the official OCS amendment history; other acts use the
           timeline derived from the gazette editions we hold */}

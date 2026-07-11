@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans_Thai, IBM_Plex_Mono, Noto_Serif_Thai } from "next/font/google";
+import { Noto_Sans_Thai_Looped, IBM_Plex_Mono, Noto_Serif_Thai } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
 
-const plexThai = IBM_Plex_Sans_Thai({
-  variable: "--font-plex-thai",
-  weight: ["400", "500", "600", "700"],
+// body / content — a looped Thai (ตัวกลม) from Google, per the สารบาญ system
+const bodyThai = Noto_Sans_Thai_Looped({
+  variable: "--font-body-thai",
+  weight: ["300", "400", "500", "600", "700"],
   subsets: ["thai", "latin"],
 });
 
-const serifThai = Noto_Serif_Thai({
+// heading fallback until the Adobe "Bree Thai Variable" kit is wired in
+// (see --font-heading in globals.css); Bree is not on Google Fonts.
+const headingFallback = Noto_Serif_Thai({
   variable: "--font-serif-thai",
   weight: ["500", "600", "700"],
   subsets: ["thai", "latin"],
@@ -35,9 +38,13 @@ export default function RootLayout({
   return (
     <html
       lang="th"
-      className={`${plexThai.variable} ${serifThai.variable} ${plexMono.variable} h-full antialiased`}
+      className={`${bodyThai.variable} ${headingFallback.variable} ${plexMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-[family-name:var(--font-plex-thai)] bg-[#fafaf8] text-stone-900">
+      {/* To enable the Bree Thai Variable heading font, add your Adobe Fonts
+          web-project kit here:
+          <link rel="stylesheet" href="https://use.typekit.net/<KIT_ID>.css" />
+          then --font-heading (globals.css) picks it up automatically. */}
+      <body className="min-h-full flex flex-col font-[family-name:var(--font-body-thai)] bg-[#fafaf8] text-stone-900">
         {/* hairline metallic strip — the obi band of the printed edition */}
         <div className="label-metal h-1.5" aria-hidden />
         <header className="sticky top-0 z-20 bg-white border-b border-stone-200">

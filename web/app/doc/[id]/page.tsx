@@ -60,12 +60,20 @@ function DocBlock({ block }: { block: Block }) {
           ))}
         </div>
       );
-    default:
+    default: {
+      // anchor each มาตรา so the บรรพ index can jump to it (#ม-<n>)
+      const text = block.lines.join(" ");
+      const m = text.match(/^มาตรา\s*([๐-๙0-9]+)/);
+      const secNo = m ? m[1].replace(/[๐-๙]/g, (d) => "๐๑๒๓๔๕๖๗๘๙".indexOf(d).toString()) : null;
       return (
-        <p className="text-justify indent-12 leading-loose m-0">
-          {block.lines.join(" ")}
+        <p
+          id={secNo ? `ม-${secNo}` : undefined}
+          className="text-justify indent-12 leading-loose m-0 scroll-mt-24"
+        >
+          {text}
         </p>
       );
+    }
   }
 }
 
