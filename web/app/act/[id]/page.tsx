@@ -333,7 +333,12 @@ export default async function ActPage({
       {treeView && (
         <section className="rounded-lg border border-dashed border-stone-300 bg-white p-5 sm:p-8 overflow-x-auto">
           <p className="cat-code mb-4">AUTHORITY&nbsp;TREE&nbsp;·&nbsp;โครงสร้างสายอำนาจตามมาตรา</p>
-          <SectionTree actName={act.fullName} entries={treeEntries} sectionsHref={sectionsHref} />
+          <SectionTree
+            actName={act.fullName}
+            actType={act.actType}
+            entries={treeEntries}
+            sectionsHref={sectionsHref}
+          />
         </section>
       )}
 

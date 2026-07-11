@@ -1,4 +1,7 @@
 import Link from "next/link";
+// the SDK's pure citation parser (no data bundle pulled in) — understands
+// "มาตรา ๑๙ วรรคห้า (๒)" including วรรค words and วรรคท้าย
+import { parseCitation } from "@/vendor/thai-law-core/src/resolve";
 
 /**
  * BasisChips — the "ออกตามมาตราไหน" property, written explicitly on every
@@ -6,14 +9,16 @@ import Link from "next/link";
  * becomes a small labelled chip (e.g. [ออกตาม] [มาตรา ๔ วรรคสาม] [มาตรา ๕]).
  *
  * When `sectionsHref` is set (the parent act has structured section data via
- * the thai-law SDK) each chip links to that มาตรา's text at
- * `<sectionsHref>#ม-<n>`.
+ * the thai-law SDK) each chip deep-links to that provision — down to the
+ * exact วรรค when the citation names one: `<sectionsHref>#ม-4-ว-3`.
  */
-const SECTION_NO_RE = /มาตรา\s*([๐-๙0-9]+(?:\/[๐-๙0-9]+)?)/;
-const THAI_DIGITS = "๐๑๒๓๔๕๖๗๘๙";
-
-function arabic(s: string): string {
-  return s.replace(/[๐-๙]/g, (d) => String(THAI_DIGITS.indexOf(d)));
+function anchorFor(citation: string): string | null {
+  const parsed = parseCitation(citation);
+  if (!parsed) return null;
+  // วรรคท้าย (-1) can't be numbered without the record — land on the section
+  return parsed.wak && parsed.wak > 0
+    ? `ม-${parsed.number}-ว-${parsed.wak}`
+    : `ม-${parsed.number}`;
 }
 
 export function BasisChips({
@@ -37,13 +42,13 @@ export function BasisChips({
     <span className="inline-flex flex-wrap items-center gap-1 align-middle">
       <span className="cat-code">{label}</span>
       {sections.map((s) => {
-        const num = sectionsHref ? SECTION_NO_RE.exec(s)?.[1] : undefined;
-        return num ? (
+        const anchor = sectionsHref ? anchorFor(s) : null;
+        return anchor ? (
           <Link
             key={s}
-            href={`${sectionsHref}#ม-${arabic(num)}`}
+            href={`${sectionsHref}#${anchor}`}
             className={`${chipCls} hover:bg-seal-100 hover:underline`}
-            title="อ่านตัวบทมาตรานี้"
+            title={anchor.includes("-ว-") ? "อ่านตัวบทวรรคนี้" : "อ่านตัวบทมาตรานี้"}
           >
             {s}
           </Link>

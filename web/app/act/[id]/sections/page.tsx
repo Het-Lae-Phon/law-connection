@@ -32,6 +32,11 @@ const STATUS_TH: Record<string, string> = {
   not_yet_in_force: "ยังไม่มีผลใช้บังคับ",
 };
 
+const WAK_TH: Record<number, string> = {
+  1: "หนึ่ง", 2: "สอง", 3: "สาม", 4: "สี่", 5: "ห้า", 6: "หก",
+  7: "เจ็ด", 8: "แปด", 9: "เก้า", 10: "สิบ", 11: "สิบเอ็ด", 12: "สิบสอง",
+};
+
 function SectionBlock({ r }: { r: ResolvedSection }) {
   const v = r.version;
   const verified = v.source.verification_status === "human_verified";
@@ -62,8 +67,19 @@ function SectionBlock({ r }: { r: ResolvedSection }) {
           <span className="cat-code">มีผลใช้บังคับ {v.enforced_from}</span>
         )}
       </div>
-      {v.paragraphs.map((p) => (
-        <div key={p.id} className="space-y-1">
+      {v.paragraphs.map((p, i) => (
+        // วรรค are cited by position, so each carries its ordinal and a stable
+        // anchor (ม-<n>-ว-<i>) — pinpoint citation targets, not just sections
+        <div key={p.id} id={`ม-${r.record.number}-ว-${i + 1}`} className="group/wak relative space-y-1 scroll-mt-24">
+          {v.paragraphs.length > 1 && (
+            <a
+              href={`#ม-${r.record.number}-ว-${i + 1}`}
+              className="absolute -left-12 top-0.5 hidden w-10 text-right cat-code hover:text-seal-700 sm:block opacity-40 group-hover/wak:opacity-100"
+              title={`มาตรา ${arabicToThai(r.record.number)} วรรค${i + 1 === v.paragraphs.length && i > 0 ? "ท้าย" : WAK_TH[i + 1] ?? i + 1}`}
+            >
+              ว.{i + 1}
+            </a>
+          )}
           <p className="indent-8 leading-relaxed text-[15px]">{p.text_th}</p>
           {(p.items ?? []).map((it) => (
             <div key={it.id} className="ml-10 space-y-1">
