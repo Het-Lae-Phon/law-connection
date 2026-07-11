@@ -54,18 +54,22 @@ function refLine(e: TreeEntry): string {
 }
 
 export function SectionTree({ actName, entries }: { actName: string; entries: TreeEntry[] }) {
-  // group by first normalised section; hold the rest of the basis as a note
-  const groups = new Map<string, { entries: (TreeEntry & { extraBasis: boolean })[] }>();
+  // A sub-regulation is issued under every section it cites, so index it under
+  // each — the tree is a reverse index "มาตรา X → กฎหมายลูกที่ออกตามมาตรานี้",
+  // which is what a lawyer reading a given section wants. (A notice that cites
+  // มาตรา ๑๖ (๔) and มาตรา ๓๗ appears under both.)
+  const groups = new Map<string, { entries: (TreeEntry & { allSections: string[] })[] }>();
   const noBasis: TreeEntry[] = [];
   for (const e of entries) {
     if (!e.legalBasis) {
       noBasis.push(e);
       continue;
     }
-    const sections = e.legalBasis.split(",").map((s) => normalizeSection(s));
-    const first = sections[0];
-    if (!groups.has(first)) groups.set(first, { entries: [] });
-    groups.get(first)!.entries.push({ ...e, extraBasis: sections.length > 1 });
+    const sections = [...new Set(e.legalBasis.split(",").map((s) => normalizeSection(s)).filter(Boolean))];
+    for (const sec of sections) {
+      if (!groups.has(sec)) groups.set(sec, { entries: [] });
+      groups.get(sec)!.entries.push({ ...e, allSections: sections });
+    }
   }
   const sorted = [...groups.entries()].sort((a, b) => {
     const [am, as] = sectionSortKey(a[0]);
@@ -84,6 +88,7 @@ export function SectionTree({ actName, entries }: { actName: string; entries: Tr
           </span>
           <span className="cat-code">
             {sorted.length}&nbsp;มาตรา&nbsp;·&nbsp;กฎหมายลูก&nbsp;{entries.length}&nbsp;ฉบับ
+            {noBasis.length > 0 && ` (ระบุมาตรา ${entries.length - noBasis.length})`}
           </span>
         </div>
       </div>
@@ -99,22 +104,22 @@ export function SectionTree({ actName, entries }: { actName: string; entries: Tr
               <span className="cat-code">กฎหมายลูก&nbsp;{g.entries.length}&nbsp;ฉบับ</span>
             </summary>
             <ul className="ml-2 border-l border-dashed border-stone-200 pl-4 py-1 space-y-2">
-              {g.entries.map((e) => (
-                <li key={e.id} className="text-sm leading-snug">
-                  <Link href={`/entry/${e.id}`} className="hover:text-seal-700">
-                    {e.title}
-                  </Link>
-                  {e.extraBasis && (
-                    <span
-                      className="ml-1.5 cat-code"
-                      title={`อ้างหลายมาตรา: ${e.legalBasis}`}
-                    >
-                      +มาตราอื่น
-                    </span>
-                  )}
-                  <div className="text-xs text-stone-400">{refLine(e)}</div>
-                </li>
-              ))}
+              {g.entries.map((e) => {
+                const others = e.allSections.filter((s) => s !== section);
+                return (
+                  <li key={e.id} className="text-sm leading-snug">
+                    <Link href={`/entry/${e.id}`} className="hover:text-seal-700">
+                      {e.title}
+                    </Link>
+                    {others.length > 0 && (
+                      <span className="ml-1.5 cat-code" title={`ออกตาม ${e.allSections.join(", ")}`}>
+                        +{others.join(", ")}
+                      </span>
+                    )}
+                    <div className="text-xs text-stone-400">{refLine(e)}</div>
+                  </li>
+                );
+              })}
             </ul>
           </details>
         ))}

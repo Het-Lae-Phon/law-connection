@@ -24,36 +24,93 @@ const SECTION_RE = new RegExp(
   `มาตรา\\s*[๐-๙0-9]+(?:/[๐-๙0-9]+)?(?:\\s*วรรค${VARACK})?(?:\\s*\\([๐-๙0-9ก-๛]+\\))?`,
   "g"
 );
+// A qualifier names which instrument the section run *before* it belongs to:
+// "...มาตรา ๔ แห่งพระราชบัญญัติ X" / "...มาตรา ๑๗๕ ของรัฐธรรมนูญ". The instrument
+// name that follows is read by slicing (not consumed) so a greedy match can't
+// swallow the *next* qualifier in a multi-instrument preamble.
+const QUALIFIER_RE =
+  /(แห่ง|ของ)\s*(รัฐธรรมนูญ|พระราชบัญญัติประกอบรัฐธรรมนูญ|พระราชบัญญัติ|พระราชกำหนด|พระราชกฤษฎีกา|ประมวล\S*|กฎ\S*|ประกาศ\S*|ระเบียบ\S*|ข้อบังคับ\S*|คำสั่ง\S*)/g;
+// the operative part begins here — never read section refs past this point
+const OPERATIVE =
+  /จึง|ดังต่อไปนี้|ให้ไว้|ให้ตรา|ออกกฎ|ออกประกาศ|ออกระเบียบ|ออกข้อบังคับ|ประกาศไว้|จึงออก|โปรดเกล้า/;
 
-// Extract the cleaned section list from a document's text, or null.
-export function extractLegalBasis(rawText: string): string | null {
+/**
+ * Extract the authorising section(s) of the PARENT act from a preamble.
+ *
+ * A preamble may cite several instruments — e.g. a royal decree opens with
+ * "มาตรา ๑๗๕ ของรัฐธรรมนูญ ... และมาตรา ๔ แห่งพระราชบัญญัติคุ้มครองข้อมูล ...".
+ * Only the sections attached to the parent act belong on the entry, so we
+ * attribute each section run to the instrument named in the qualifier that
+ * follows it and drop รัฐธรรมนูญ sections (unless the parent IS the
+ * constitution). Pure emergency decrees issued solely under the constitution
+ * therefore yield null — they are not "issued under a section of" the act
+ * they happen to amend.
+ */
+export function extractLegalBasis(
+  rawText: string,
+  isConstitutionParent = false,
+  parentName?: string
+): string | null {
   // normalise the decomposed sara-am (ํา → ำ) that many Krisdika texts use —
   // otherwise "อาศัยอำนาจ" is not found in e.g. revenue-code announcements
   const text = rawText.replace(/ํา/g, "ำ").replace(/\\_/g, "").replace(/\s+/g, " ");
   const start = text.indexOf(AUTHORITY);
   if (start < 0) return null;
-  let window = text.slice(start + AUTHORITY.length, start + AUTHORITY.length + 240);
-  // the section list always precedes the parent act ("แห่ง ...") or,
-  // for คสช. orders, "ของรัฐธรรมนูญ" — cut there to avoid later clauses
-  const bounds = ["แห่ง", "ของรัฐธรรมนูญ"]
-    .map((b) => window.indexOf(b))
-    .filter((i) => i >= 0);
-  if (bounds.length) window = window.slice(0, Math.min(...bounds));
+  let clause = text.slice(start + AUTHORITY.length, start + AUTHORITY.length + 400);
+  const op = clause.search(OPERATIVE);
+  if (op > 0) clause = clause.slice(0, op);
   // authority clause must start with a section reference (avoid false hits)
-  if (!/^\s*มาตรา/.test(window)) return null;
-  const sections = window.match(SECTION_RE);
-  if (!sections?.length) return null;
-  // dedupe, normalise spacing, cap length
+  if (!/^\s*มาตรา/.test(clause)) return null;
+
+  // when the parent act's name is known, only the section run whose qualifier
+  // names that act counts — a preamble often cites another instrument too
+  // (e.g. PDPA announcement: "มาตรา ๔ แห่ง พ.ร.บ.คุ้มครองฯ ประกอบมาตรา ๕ แห่ง
+  //  พระราชกฤษฎีกา..." → only มาตรา ๔ belongs to the PDPA).
+  const pName = parentName?.replace(/ํา/g, "ำ").replace(/\s+/g, "").trim();
+  const quals = [...clause.matchAll(QUALIFIER_RE)].map((m) => ({
+    index: m.index!,
+    isConstitution: m[2].startsWith("รัฐธรรมนูญ"),
+    // read ~45 chars of the instrument name by slicing (not consuming), spaces
+    // stripped, so the parent act can be matched by name
+    name: clause.slice(m.index!, m.index! + 45).replace(/ํา/g, "ำ").replace(/\s+/g, ""),
+  }));
+  const matchesParent = pName && pName.length >= 4
+    ? quals.some((q) => q.name.includes(pName))
+    : false;
+
   const seen = new Set<string>();
-  const list = sections
-    .map((s) => s.replace(/\s+/g, " ").replace(/\(\s*/g, " (").replace(/\s*\)/g, ")").trim())
-    .filter((s) => (seen.has(s) ? false : (seen.add(s), true)))
-    .slice(0, 8);
-  return list.join(", ");
+  const kept: string[] = [];
+  let cursor = 0;
+  for (const q of quals) {
+    const segment = clause.slice(cursor, q.index);
+    cursor = q.index;
+    // if we can pin the parent act by name, take only its section run;
+    // otherwise fall back to "every non-constitution instrument"
+    if (matchesParent) {
+      if (!q.name.includes(pName!)) continue;
+    } else if (q.isConstitution && !isConstitutionParent) {
+      continue;
+    }
+    for (const s of segment.match(SECTION_RE) ?? []) {
+      const c = s
+        .replace(/มาตรา(?=[๐-๙0-9])/, "มาตรา ") // OCR sometimes drops the space
+        .replace(/\s*\(\s*/g, " (")
+        .replace(/\s*\)/g, ")")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (!seen.has(c)) (seen.add(c), kept.push(c));
+    }
+  }
+  if (kept.length === 0) return null;
+  return kept.slice(0, 8).join(", ");
 }
 
 async function main() {
   const test = process.argv.includes("--test");
+  // --recompute reprocesses every entry with an authority clause and overwrites
+  // the stored basis (including clearing values that were mis-attributed to the
+  // constitution before the parent-act attribution fix).
+  const recompute = process.argv.includes("--recompute");
   const limit = process.argv.find((a) => /^\d+$/.test(a));
   const take = limit ? parseInt(limit, 10) : test ? 12 : undefined;
 
@@ -62,13 +119,17 @@ async function main() {
   const candidates = await prisma.gazetteEntry.findMany({
     // filter on sara-am-free "อาศัย" so decomposed texts (ํา) are caught too;
     // the extractor then validates the full "อาศัยอำนาจตามความใน" clause
-    where: { legalBasis: null, documentText: { text: { contains: "อาศัย" } } },
-    select: { id: true, title: true, act: { select: { shortName: true } } },
+    where: {
+      ...(recompute ? {} : { legalBasis: null }),
+      documentText: { text: { contains: "อาศัย" } },
+    },
+    select: { id: true, title: true, legalBasis: true, act: { select: { shortName: true, actType: true } } },
     take,
   });
   console.log(`${candidates.length} candidate entries`);
 
   let found = 0,
+    cleared = 0,
     done = 0;
   const BATCH = 300;
   for (let i = 0; i < candidates.length; i += BATCH) {
@@ -80,19 +141,30 @@ async function main() {
     const textById = new Map(texts.map((t) => [t.entryId, t.text]));
     for (const c of slice) {
       done++;
-      const basis = extractLegalBasis(textById.get(c.id) ?? "");
-      if (!basis) continue;
-      found++;
+      const basis = extractLegalBasis(
+        textById.get(c.id) ?? "",
+        c.act?.actType === "รัฐธรรมนูญ",
+        c.act?.shortName
+      );
+      if (basis) found++;
       if (test) {
-        console.log(`\n${c.title.slice(0, 70)}`);
-        console.log(`  → ออกตามความใน ${basis}${c.act ? ` แห่ง${c.act.shortName}` : ""}`);
-      } else {
+        if (basis) {
+          console.log(`\n${c.title.slice(0, 70)}`);
+          console.log(`  → ออกตามความใน ${basis}${c.act ? ` แห่ง${c.act.shortName}` : ""}`);
+        }
+      } else if (recompute) {
+        // overwrite only when the value actually changes
+        if ((c.legalBasis ?? null) !== (basis ?? null)) {
+          if (!basis && c.legalBasis) cleared++;
+          await prisma.gazetteEntry.update({ where: { id: c.id }, data: { legalBasis: basis } });
+        }
+      } else if (basis) {
         await prisma.gazetteEntry.update({ where: { id: c.id }, data: { legalBasis: basis } });
       }
     }
-    if (!test) console.log(`  ${done}/${candidates.length} processed, ${found} with legal basis`);
+    if (!test) console.log(`  ${done}/${candidates.length} processed, ${found} with basis${recompute ? `, ${cleared} cleared` : ""}`);
   }
-  console.log(`\n${test ? "TEST — " : ""}${found}/${done} extracted a legal basis`);
+  console.log(`\n${test ? "TEST — " : ""}${found}/${done} have a legal basis${recompute ? ` (${cleared} mis-attributed values cleared)` : ""}`);
   await prisma.$disconnect();
 }
 

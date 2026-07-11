@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Sarabun } from "next/font/google";
 import { prisma } from "@/lib/db";
 import { formatThaiDate } from "@/lib/format";
-import { buildCitation } from "@/lib/cite";
+import { buildCitation, originalSource } from "@/lib/cite";
 import { CopyCite } from "@/app/components/copy-cite";
 import { typesetLegalText, type Block } from "@/lib/typeset";
 
@@ -106,7 +106,11 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
             ที่มาของสำเนา:{" "}
             {entry.origin === "ocs"
               ? "ระบบค้นหากฎหมาย สำนักงานคณะกรรมการกฤษฎีกา (ฉบับปรับปรุงล่าสุด)"
-              : "ห้องสมุดกฎหมาย สำนักงานคณะกรรมการกฤษฎีกา"}
+              : entry.origin === "gazette"
+                ? "ราชกิจจานุเบกษา (แปลงข้อความด้วยเครื่อง)"
+                : entry.origin === "pdpc"
+                  ? "เว็บไซต์สำนักงานคณะกรรมการคุ้มครองข้อมูลส่วนบุคคล (สคส.)"
+                  : "ห้องสมุดกฎหมาย สำนักงานคณะกรรมการกฤษฎีกา"}
           </span>
         </div>
         {entry.act && !entry.isPrimary && (
@@ -124,20 +128,24 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
 
       <div className="rounded-lg border border-stone-300 bg-white p-4 text-sm space-y-2">
         <div className="font-bold">การเข้าถึงต้นฉบับ</div>
-        {entry.sourceUrl?.startsWith("http") ? (
-          <p>
-            <a
-              href={entry.sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block rounded bg-stone-900 text-white px-3 py-1.5 hover:bg-stone-700"
-            >
-              {entry.origin === "ocs"
-                ? "เปิดตัวบทฉบับทางการ (ระบบค้นหากฎหมาย สคก.) ↗"
-                : "เปิดต้นฉบับ PDF ในราชกิจจานุเบกษา ↗"}
-            </a>
-          </p>
-        ) : entry.volume > 0 ? (
+        {(() => {
+          const src = originalSource(entry);
+          return src ? (
+            <p>
+              <a
+                href={src.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block rounded bg-stone-900 text-white px-3 py-1.5 hover:bg-stone-700"
+              >
+                {entry.origin === "ocs"
+                  ? "เปิดตัวบทฉบับทางการ (ระบบค้นหากฎหมาย สคก.) ↗"
+                  : `เปิดต้นฉบับ · ${src.label} ↗`}
+              </a>
+            </p>
+          ) : null;
+        })()}
+        {!originalSource(entry) && entry.volume > 0 ? (
           <p>
             ต้นฉบับประกาศใน<b>ราชกิจจานุเบกษา เล่ม {entry.volume} ตอนที่ {entry.issue}{" "}
             {entry.category} หน้า {entry.page}</b>
@@ -152,7 +160,7 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
               ratchakitcha.soc.go.th
             </a>
           </p>
-        ) : (
+        ) : !originalSource(entry) ? (
           <p>
             เอกสารนี้อยู่ในระบบค้นหากฎหมายของสำนักงานคณะกรรมการกฤษฎีกา ซึ่งยังไม่มีลิงก์สาธารณะแบบถาวร —
             ค้นหาจากชื่อเรื่องได้ที่{" "}
@@ -165,7 +173,7 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
               ocs.go.th/searchlaw
             </a>
           </p>
-        )}
+        ) : null}
         <p className="text-seal-800">
           ⚠️ ข้อความด้านล่างเป็น<b>สำเนาเพื่อความสะดวกในการอ้างอิง</b> (แปลงจากต้นฉบับด้วยเครื่อง
           อาจมีคลาดเคลื่อน) — การใช้อ้างอิงทางกฎหมายให้ยึดต้นฉบับเป็นสำคัญ
