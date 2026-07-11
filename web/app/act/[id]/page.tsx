@@ -183,20 +183,14 @@ export default async function ActPage({
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
           <CopyCite citation={primaryEntry ? buildCitation(primaryEntry) : act.fullName} />
-          {textEntry && (
+          {/* one reader: the structured SDK text when covered (preamble +
+              anchored มาตรา/วรรค), else the DocumentText copy at /doc */}
+          {(sectionsHref || textEntry) && (
             <Link
-              href={`/doc/${textEntry.id}`}
+              href={sectionsHref ?? `/doc/${textEntry!.id}`}
               className="rounded bg-seal-700 text-white px-3 py-1.5 text-sm hover:bg-seal-800"
             >
               อ่านตัวบทฉบับเต็ม
-            </Link>
-          )}
-          {sdkSlugFor(act) && (
-            <Link
-              href={`/act/${act.id}/sections`}
-              className="rounded border border-seal-700 text-seal-800 px-3 py-1.5 text-sm hover:bg-seal-50"
-            >
-              ตัวบทรายมาตรา
             </Link>
           )}
           {primaryEntry &&

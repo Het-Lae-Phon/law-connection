@@ -6,6 +6,7 @@ import { formatThaiDate } from "@/lib/format";
 import { buildCitation, originalSource } from "@/lib/cite";
 import { CopyCite } from "@/app/components/copy-cite";
 import { typesetLegalText, type Block } from "@/lib/typeset";
+import { sdkSlugFor } from "@/lib/thai-law";
 
 // The Royal Gazette is typeset in TH Sarabun — use its Google-hosted sibling
 // so the reference copy reads like the printed original.
@@ -133,6 +134,20 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
           <CopyCite citation={buildCitation(entry)} />
         </div>
       </header>
+
+      {/* the structured reader supersedes this copy for SDK-covered acts */}
+      {entry.isPrimary && entry.act && sdkSlugFor(entry.act) && (
+        <div className="rounded-lg border border-seal-300 bg-seal-50 p-4 text-sm">
+          กฎหมายฉบับนี้มี<b>ตัวบทฉบับเต็มแบบโครงสร้างรายมาตรา</b> —
+          อ้างอิงเจาะรายมาตรา/รายวรรค พร้อมสถานะการตรวจทาน และอ่านย้อนเวลาได้{" "}
+          <Link
+            href={`/act/${entry.act.id}/sections`}
+            className="font-medium text-seal-700 underline hover:text-seal-800"
+          >
+            เปิดฉบับโครงสร้าง →
+          </Link>
+        </div>
+      )}
 
       <div className="rounded-lg border border-stone-300 bg-white p-4 text-sm space-y-2">
         <div className="font-bold">การเข้าถึงต้นฉบับ</div>

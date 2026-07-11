@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Sarabun } from "next/font/google";
 import { prisma } from "@/lib/db";
 import { BackLink } from "@/app/components/back-link";
 import { CopyCite } from "@/app/components/copy-cite";
@@ -17,11 +18,19 @@ import {
 } from "@/lib/thai-law";
 
 /**
- * ตัวบทรายมาตรา — structured section-by-section text of an act, powered by
- * the team's @thai-law/core SDK (Het-Lae-Phon/thai-law): typed section
- * records with point-in-time versions, definitions and cross-references.
- * Supports ?asOf=YYYY-MM-DD to read the law as it stood on a given date.
+ * ตัวบทฉบับเต็ม (โครงสร้างรายมาตรา) — THE reader for SDK-covered acts: the
+ * complete text from the royal preamble down, typeset like the gazette
+ * (Sarabun), but built from @thai-law/core structured records — so every
+ * มาตรา and every วรรค is an addressable anchor with provenance chips, and
+ * ?asOf=YYYY-MM-DD reads the law as it stood on a date. Merges what used to
+ * be two pages (/doc full text + /sections structure) into one.
  */
+
+// the Royal Gazette is typeset in TH Sarabun — same treatment as /doc
+const sarabun = Sarabun({
+  weight: ["400", "700"],
+  subsets: ["thai", "latin"],
+});
 
 export const dynamic = "force-dynamic";
 
@@ -80,14 +89,14 @@ function SectionBlock({ r }: { r: ResolvedSection }) {
               ว.{i + 1}
             </a>
           )}
-          <p className="indent-8 leading-relaxed text-[15px]">{p.text_th}</p>
+          <p className="indent-12 leading-loose text-justify">{p.text_th}</p>
           {(p.items ?? []).map((it) => (
             <div key={it.id} className="ml-10 space-y-1">
-              <p className="leading-relaxed text-[15px]">
+              <p className="leading-loose">
                 <span className="text-seal-700">{it.num_th}</span> {it.text_th}
               </p>
               {(it.subitems ?? []).map((s) => (
-                <p key={s.id} className="ml-8 leading-relaxed text-[15px]">
+                <p key={s.id} className="ml-8 leading-loose">
                   <span className="text-seal-700">{s.num_th}</span> {s.text_th}
                 </p>
               ))}
@@ -167,7 +176,7 @@ export default async function ActSectionsPage({
         <Link href={`/act/${act.id}`} className="hover:underline">
           {act.shortName}
         </Link>{" "}
-        / <span className="text-stone-700">ตัวบทรายมาตรา</span>
+        / <span className="text-stone-700">ตัวบทฉบับเต็ม</span>
       </nav>
 
       <header className="space-y-2">
@@ -177,8 +186,8 @@ export default async function ActSectionsPage({
         </div>
         <h1 className="text-2xl font-bold leading-snug">{manifest.title_th}</h1>
         <p className="text-sm text-stone-500">
-          โครงสร้างรายมาตราจากชุดข้อมูลเปิด thai-law ({sections.length} มาตรา · ตรวจทานแล้ว{" "}
-          {verifiedCount}) —{" "}
+          ตัวบทฉบับเต็ม โครงสร้างรายมาตราจากชุดข้อมูลเปิด thai-law ({sections.length} มาตรา ·
+          ตรวจทานแล้ว {verifiedCount}) —{" "}
           <a
             href={manifest.gazette.url}
             target="_blank"
@@ -235,8 +244,41 @@ export default async function ActSectionsPage({
         </details>
       )}
 
-      <article className="rounded-lg border border-stone-200 bg-white px-5 py-8 sm:px-12 sm:py-10 space-y-6">
+      <article
+        className={`${sarabun.className} rounded-lg border border-stone-200 bg-white px-5 py-10 sm:px-14 sm:py-14 text-[17px] text-stone-900 space-y-6`}
+      >
+        {/* the royal preamble — the document opens exactly like the gazette */}
+        {manifest.preamble?.text_th && (
+          <div className="space-y-3 pb-2">
+            {manifest.preamble.text_th.map((line, i) =>
+              i === 0 ? (
+                <div key={i} className="text-center font-bold text-[1.3em] leading-relaxed">
+                  {line}
+                  <div className="mx-auto mt-3 w-40 border-b border-stone-800" />
+                </div>
+              ) : /^(ให้ไว้|พระบาทสมเด็จ|สมเด็จพระ)/.test(line) && line.length < 90 ? (
+                <div key={i} className="text-center leading-loose">
+                  {line}
+                </div>
+              ) : (
+                <p key={i} className="indent-12 leading-loose text-justify">
+                  {line}
+                </p>
+              ),
+            )}
+          </div>
+        )}
         {structure.map((n) => renderNode(n, 0))}
+        {manifest.preamble?.countersignature_th && (
+          <div className="pt-4 text-center leading-loose whitespace-pre-line">
+            {manifest.preamble.countersignature_th}
+          </div>
+        )}
+        {manifest.preamble?.remark_th && (
+          <p className="border-t border-stone-200 pt-4 text-[0.85em] leading-relaxed text-stone-500">
+            {manifest.preamble.remark_th}
+          </p>
+        )}
       </article>
 
       <p className="text-[11px] text-stone-400">
