@@ -13,6 +13,8 @@ import { SectionTree } from "@/app/components/section-tree";
 import { VersionTimeline } from "@/app/components/version-timeline";
 import { CodeTimeline, codeTimelineFor } from "@/app/components/code-timeline";
 import { BookIndex, codeBooksFor } from "@/app/components/book-index";
+import { TypeGlyph } from "@/app/components/geo-shape";
+import { BasisChips } from "@/app/components/basis-chips";
 
 // Thai government domains get an "official" badge on source links
 function isGovDomain(url: string): boolean {
@@ -152,7 +154,10 @@ export default async function ActPage({
       </nav>
 
       <header className="space-y-2">
-        <div className="text-sm font-medium text-seal-700">{act.actType}</div>
+        <div className="flex items-center gap-1.5 text-sm font-medium text-seal-700">
+          <TypeGlyph type={act.actType} size={14} />
+          {act.actType}
+        </div>
         <h1 className="text-2xl font-bold leading-snug">{act.fullName}</h1>
         {act.status === "repealed" && (
           <div className="rounded border border-seal-300 bg-seal-50 px-3 py-2 text-sm text-seal-900">
@@ -360,6 +365,7 @@ export default async function ActPage({
         return (
           <section key={key} id={`group-${key}`} className="scroll-mt-16">
             <h2 className="text-lg font-bold mb-3 flex items-baseline gap-2">
+              <TypeGlyph type={key} size={13} className="self-center" />
               {GROUP_LABELS[key] ?? key}
               <span className="text-sm font-normal text-stone-400">
                 {total.toLocaleString("th-TH")} ฉบับ
@@ -396,8 +402,8 @@ export default async function ActPage({
                         {ORIGIN_LABELS[e.origin] && ` · ${ORIGIN_LABELS[e.origin]}`}
                       </div>
                       {e.legalBasis && (
-                        <div className="text-xs text-stone-400">
-                          ออกตามความใน {e.legalBasis}
+                        <div>
+                          <BasisChips legalBasis={e.legalBasis} />
                         </div>
                       )}
                       <div className="flex flex-wrap items-center gap-2">

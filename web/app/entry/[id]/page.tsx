@@ -8,6 +8,8 @@ import { confirmLink, disputeLink } from "@/lib/actions";
 import { CopyCite } from "@/app/components/copy-cite";
 import { VerifyBadge } from "@/app/components/verify-badge";
 import { BackLink } from "@/app/components/back-link";
+import { BasisChips } from "@/app/components/basis-chips";
+import { TypeGlyph } from "@/app/components/geo-shape";
 
 export const dynamic = "force-dynamic";
 
@@ -75,21 +77,26 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
           <span>{formatThaiDate(entry.publishedAt)}</span>
           {entry.volume > 0 && (
             <span>
-              เล่ม {entry.volume} ตอนที่ {entry.issue} {entry.category} หน้า {entry.page}
+              เล่ม {entry.volume} ตอนที่ {entry.issue} {entry.category}
+              {entry.page > 0 ? ` หน้า ${entry.page}` : ""}
             </span>
           )}
           {ORIGIN_LABELS[entry.origin] && <span>{ORIGIN_LABELS[entry.origin]}</span>}
         </div>
         {entry.act && (
-          <div className="text-sm">
-            ออกตามความใน{entry.legalBasis ? ` ${entry.legalBasis} แห่ง` : ""}{" "}
-            <Link href={`/act/${entry.act.id}`} className="text-seal-700 hover:underline">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+            <BasisChips legalBasis={entry.legalBasis} label="ออกตามความใน" />
+            <span className="text-stone-500">{entry.legalBasis ? "แห่ง" : "ออกตามความใน"}</span>
+            <Link href={`/act/${entry.act.id}`} className="inline-flex items-center gap-1.5 text-seal-700 hover:underline">
+              <TypeGlyph type={entry.act.actType} size={12} />
               {entry.act.fullName}
             </Link>
           </div>
         )}
         {!entry.act && entry.legalBasis && (
-          <div className="text-sm text-stone-600">ออกตามความใน {entry.legalBasis}</div>
+          <div className="text-sm">
+            <BasisChips legalBasis={entry.legalBasis} label="ออกตามความใน" />
+          </div>
         )}
         <div className="flex flex-wrap items-center gap-2 pt-1">
           <VerifyBadge status={entry.verifyStatus} source={entry.linkSource} />

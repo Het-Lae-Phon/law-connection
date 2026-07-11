@@ -83,6 +83,59 @@ export function GeoShape({
   );
 }
 
+/**
+ * TypeGlyph — the geometric mark of a law's rank, used as a small inline icon
+ * across cards, lists and headers so each instrument type is recognisable at
+ * a glance:
+ *   ▲ (hairline ตราช่าง)  รัฐธรรมนูญ · ประมวลกฎหมาย · พ.ร.บ. — primary law
+ *   ●                     พระราชกำหนด
+ *   ◼                     พระราชกฤษฎีกา
+ *   ⬟                     กฎกระทรวง / กฎ
+ *   ⬢                     ประกาศ · ระเบียบ · ข้อบังคับ · คำสั่ง · อื่น ๆ
+ */
+const GLYPH_SIDES: [RegExp, { sides: number; filled: boolean; rotate?: number }][] = [
+  [/^(รัฐธรรมนูญ|ประมวล|พระราชบัญญัติ)/, { sides: 3, filled: false, rotate: 0 }],
+  [/^พระราชกำหนด/, { sides: 1, filled: true }],
+  [/^พระราชกฤษฎีกา/, { sides: 4, filled: true }],
+  [/^(กฎกระทรวง|กฎ)/, { sides: 5, filled: true }],
+];
+
+export function TypeGlyph({
+  type,
+  size = 13,
+  className = "",
+}: {
+  type: string | null | undefined;
+  size?: number;
+  className?: string;
+}) {
+  const t = (type ?? "").trim();
+  const spec = GLYPH_SIDES.find(([re]) => re.test(t))?.[1] ?? { sides: 6, filled: true };
+  const cx = 50, cy = 50, r = 42;
+  const ink = "#44403c"; // stone-700
+  return (
+    <svg
+      viewBox="0 0 100 100"
+      width={size}
+      height={size}
+      className={`inline-block shrink-0 align-[-0.08em] ${className}`}
+      aria-hidden
+    >
+      {spec.sides <= 1 ? (
+        <circle cx={cx} cy={cy} r={r} fill={spec.filled ? ink : "none"} stroke={ink} strokeWidth={spec.filled ? 0 : 12} />
+      ) : (
+        <polygon
+          points={polygonPoints(spec.sides, r, cx, cy, spec.rotate ?? ROTATION[spec.sides] ?? 0)}
+          fill={spec.filled ? ink : "none"}
+          stroke={ink}
+          strokeWidth={spec.filled ? 0 : 12}
+          strokeLinejoin="round"
+        />
+      )}
+    </svg>
+  );
+}
+
 /** The triangle ตราช่าง — hairline emblem that marks a ประมวลกฎหมาย. */
 export function CodeEmblem({
   name,

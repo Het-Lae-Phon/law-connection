@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { formatThaiDate } from "@/lib/format";
 import { SearchBox } from "@/app/components/search-box";
+import { TypeGlyph } from "@/app/components/geo-shape";
 
 export const dynamic = "force-dynamic";
 
@@ -82,7 +83,10 @@ export default async function Home() {
                   {a._count.entries.toLocaleString("th-TH")}&nbsp;ฉบับ
                 </span>
               </div>
-              <div className="font-semibold leading-snug mt-2">{a.fullName}</div>
+              <div className="font-semibold leading-snug mt-2 flex items-start gap-1.5">
+                <TypeGlyph type={a.actType} size={13} className="mt-1.5" />
+                <span>{a.fullName}</span>
+              </div>
             </Link>
           ))}
         </div>

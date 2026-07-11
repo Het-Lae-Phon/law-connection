@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { formatThaiDate } from "@/lib/format";
+import { BasisChips } from "./basis-chips";
 
 /**
  * Word-tree of an act's subordinate legislation, branched by the authorising
@@ -104,22 +105,18 @@ export function SectionTree({ actName, entries }: { actName: string; entries: Tr
               <span className="cat-code">กฎหมายลูก&nbsp;{g.entries.length}&nbsp;ฉบับ</span>
             </summary>
             <ul className="ml-2 border-l border-dashed border-stone-200 pl-4 py-1 space-y-2">
-              {g.entries.map((e) => {
-                const others = e.allSections.filter((s) => s !== section);
-                return (
-                  <li key={e.id} className="text-sm leading-snug">
-                    <Link href={`/entry/${e.id}`} className="hover:text-seal-700">
-                      {e.title}
-                    </Link>
-                    {others.length > 0 && (
-                      <span className="ml-1.5 cat-code" title={`ออกตาม ${e.allSections.join(", ")}`}>
-                        +{others.join(", ")}
-                      </span>
-                    )}
-                    <div className="text-xs text-stone-400">{refLine(e)}</div>
-                  </li>
-                );
-              })}
+              {g.entries.map((e) => (
+                <li key={e.id} className="text-sm leading-snug">
+                  <Link href={`/entry/${e.id}`} className="hover:text-seal-700">
+                    {e.title}
+                  </Link>
+                  {/* the authorising sections written out as a property */}
+                  <div className="mt-0.5">
+                    <BasisChips legalBasis={e.legalBasis} />
+                  </div>
+                  <div className="text-xs text-stone-400">{refLine(e)}</div>
+                </li>
+              ))}
             </ul>
           </details>
         ))}

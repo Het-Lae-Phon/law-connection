@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
+import { TypeGlyph } from "@/app/components/geo-shape";
 
 export const dynamic = "force-dynamic";
 
@@ -110,7 +111,10 @@ export default async function ActsPage({
               href={`/act/${a.id}`}
               className="flex items-baseline justify-between gap-4 p-4 hover:bg-seal-50"
             >
-              <span className="font-medium leading-snug">{a.fullName}</span>
+              <span className="font-medium leading-snug flex items-start gap-1.5">
+                <TypeGlyph type={a.actType} size={12} className="mt-1.5 shrink-0" />
+                {a.fullName}
+              </span>
               <span className="shrink-0 text-sm text-stone-500">
                 {a._count.entries.toLocaleString("th-TH")} ฉบับ
               </span>
