@@ -76,7 +76,8 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
           <span>{formatThaiDate(entry.publishedAt)}</span>
           {entry.volume > 0 && (
             <span>
-              เล่ม {entry.volume} ตอนที่ {entry.issue} {entry.category} หน้า {entry.page}
+              เล่ม {entry.volume} ตอนที่ {entry.issue} {entry.category}
+              {entry.page > 0 ? ` หน้า ${entry.page}` : ""}
             </span>
           )}
           {ORIGIN_LABELS[entry.origin] && <span>{ORIGIN_LABELS[entry.origin]}</span>}
