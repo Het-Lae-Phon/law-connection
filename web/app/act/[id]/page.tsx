@@ -15,6 +15,7 @@ import { CodeTimeline, codeTimelineFor } from "@/app/components/code-timeline";
 import { BookIndex, codeBooksFor } from "@/app/components/book-index";
 import { TypeGlyph } from "@/app/components/geo-shape";
 import { BasisChips } from "@/app/components/basis-chips";
+import { sdkSlugFor } from "@/lib/thai-law";
 
 // Thai government domains get an "official" badge on source links
 function isGovDomain(url: string): boolean {
@@ -101,6 +102,8 @@ export default async function ActPage({
     }),
   ]);
   const countByType = new Map(typeCounts.map((t) => [t.instrumentType ?? "อื่น ๆ", t._count]));
+  // structured section texts via the thai-law SDK — chips deep-link into them
+  const sectionsHref = sdkSlugFor(act) ? `/act/${act.id}/sections` : undefined;
 
   const orderedKeys = filterType
     ? [filterType]
@@ -186,6 +189,14 @@ export default async function ActPage({
               className="rounded bg-seal-700 text-white px-3 py-1.5 text-sm hover:bg-seal-800"
             >
               อ่านตัวบทฉบับเต็ม
+            </Link>
+          )}
+          {sdkSlugFor(act) && (
+            <Link
+              href={`/act/${act.id}/sections`}
+              className="rounded border border-seal-700 text-seal-800 px-3 py-1.5 text-sm hover:bg-seal-50"
+            >
+              ตัวบทรายมาตรา
             </Link>
           )}
           {primaryEntry &&
@@ -322,7 +333,7 @@ export default async function ActPage({
       {treeView && (
         <section className="rounded-lg border border-dashed border-stone-300 bg-white p-5 sm:p-8 overflow-x-auto">
           <p className="cat-code mb-4">AUTHORITY&nbsp;TREE&nbsp;·&nbsp;โครงสร้างสายอำนาจตามมาตรา</p>
-          <SectionTree actName={act.fullName} entries={treeEntries} />
+          <SectionTree actName={act.fullName} entries={treeEntries} sectionsHref={sectionsHref} />
         </section>
       )}
 
@@ -403,7 +414,7 @@ export default async function ActPage({
                       </div>
                       {e.legalBasis && (
                         <div>
-                          <BasisChips legalBasis={e.legalBasis} />
+                          <BasisChips legalBasis={e.legalBasis} sectionsHref={sectionsHref} />
                         </div>
                       )}
                       <div className="flex flex-wrap items-center gap-2">

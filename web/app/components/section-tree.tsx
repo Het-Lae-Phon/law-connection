@@ -54,7 +54,16 @@ function refLine(e: TreeEntry): string {
   return parts.join(" · ");
 }
 
-export function SectionTree({ actName, entries }: { actName: string; entries: TreeEntry[] }) {
+export function SectionTree({
+  actName,
+  entries,
+  sectionsHref,
+}: {
+  actName: string;
+  entries: TreeEntry[];
+  /** when set, มาตรา chips link into the structured section text */
+  sectionsHref?: string;
+}) {
   // A sub-regulation is issued under every section it cites, so index it under
   // each — the tree is a reverse index "มาตรา X → กฎหมายลูกที่ออกตามมาตรานี้",
   // which is what a lawyer reading a given section wants. (A notice that cites
@@ -112,7 +121,7 @@ export function SectionTree({ actName, entries }: { actName: string; entries: Tr
                   </Link>
                   {/* the authorising sections written out as a property */}
                   <div className="mt-0.5">
-                    <BasisChips legalBasis={e.legalBasis} />
+                    <BasisChips legalBasis={e.legalBasis} sectionsHref={sectionsHref} />
                   </div>
                   <div className="text-xs text-stone-400">{refLine(e)}</div>
                 </li>

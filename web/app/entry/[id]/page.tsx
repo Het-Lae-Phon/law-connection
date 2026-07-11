@@ -10,6 +10,7 @@ import { VerifyBadge } from "@/app/components/verify-badge";
 import { BackLink } from "@/app/components/back-link";
 import { BasisChips } from "@/app/components/basis-chips";
 import { TypeGlyph } from "@/app/components/geo-shape";
+import { sdkSlugFor } from "@/lib/thai-law";
 
 export const dynamic = "force-dynamic";
 
@@ -85,7 +86,11 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
         </div>
         {entry.act && (
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-            <BasisChips legalBasis={entry.legalBasis} label="ออกตามความใน" />
+            <BasisChips
+              legalBasis={entry.legalBasis}
+              label="ออกตามความใน"
+              sectionsHref={sdkSlugFor(entry.act) ? `/act/${entry.act.id}/sections` : undefined}
+            />
             <span className="text-stone-500">{entry.legalBasis ? "แห่ง" : "ออกตามความใน"}</span>
             <Link href={`/act/${entry.act.id}`} className="inline-flex items-center gap-1.5 text-seal-700 hover:underline">
               <TypeGlyph type={entry.act.actType} size={12} />
