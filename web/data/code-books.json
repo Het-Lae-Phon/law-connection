@@ -1,0 +1,43 @@
+{
+ "แพ่งและพาณิชย์": {
+  "division": "บรรพ",
+  "books": [
+   {
+    "book": 1,
+    "topic": "หลักทั่วไป",
+    "startSection": 4,
+    "endSection": 193
+   },
+   {
+    "book": 2,
+    "topic": "หนี้",
+    "startSection": 194,
+    "endSection": 452
+   },
+   {
+    "book": 3,
+    "topic": "เอกเทศสัญญา",
+    "startSection": 453,
+    "endSection": 1297
+   },
+   {
+    "book": 4,
+    "topic": "ทรัพย์สิน",
+    "startSection": 1298,
+    "endSection": 1434
+   },
+   {
+    "book": 5,
+    "topic": "ครอบครัว",
+    "startSection": 1435,
+    "endSection": 1598
+   },
+   {
+    "book": 6,
+    "topic": "มรดก",
+    "startSection": 1599,
+    "endSection": 1755
+   }
+  ]
+ }
+}
