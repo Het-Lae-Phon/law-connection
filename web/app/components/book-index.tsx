@@ -51,7 +51,7 @@ export function BookIndex({
             </div>
           );
           return docId ? (
-            <Link key={b.book} href={`/doc/${docId}#ม-${b.startSection}`} className="group block">
+            <Link key={b.book} href={`/entry/${docId}#ม-${b.startSection}`} className="group block">
               {inner}
             </Link>
           ) : (
