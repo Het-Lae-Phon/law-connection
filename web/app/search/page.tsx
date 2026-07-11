@@ -4,6 +4,7 @@ import { formatThaiDate } from "@/lib/format";
 import { EntryActions } from "@/app/components/entry-actions";
 import { SearchBox } from "@/app/components/search-box";
 import { searchActsRanked, searchEntries } from "@/lib/search";
+import { Breadcrumbs } from "@/app/components/breadcrumbs";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,7 @@ export default async function SearchPage({
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "ค้นหา" }]} backFallback="/" />
       <h1 className="text-2xl font-bold">ค้นหา</h1>
 
       <div className="max-w-2xl">

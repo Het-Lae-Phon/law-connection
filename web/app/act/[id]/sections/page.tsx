@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Sarabun } from "next/font/google";
 import { prisma } from "@/lib/db";
-import { BackLink } from "@/app/components/back-link";
+import { Breadcrumbs } from "@/app/components/breadcrumbs";
 import { CopyCite } from "@/app/components/copy-cite";
 import { TypeGlyph } from "@/app/components/geo-shape";
 import {
@@ -170,14 +170,13 @@ export default async function ActSectionsPage({
 
   return (
     <div className="space-y-6">
-      <nav className="text-sm text-stone-500 flex flex-wrap items-center gap-x-1">
-        <BackLink fallbackHref={`/act/${act.id}`} />
-        <span className="mx-1">·</span>
-        <Link href={`/act/${act.id}`} className="hover:underline">
-          {act.shortName}
-        </Link>{" "}
-        / <span className="text-stone-700">ตัวบทฉบับเต็ม</span>
-      </nav>
+      <Breadcrumbs
+        items={[
+          { label: "กฎหมายแม่บท", href: "/acts" },
+          { label: act.shortName, href: `/act/${act.id}` },
+          { label: "ตัวบทฉบับเต็ม" },
+        ]}
+      />
 
       <header className="space-y-2">
         <div className="flex items-center gap-1.5 text-sm font-medium text-seal-700">

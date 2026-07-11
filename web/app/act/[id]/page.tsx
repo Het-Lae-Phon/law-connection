@@ -6,7 +6,7 @@ import { confirmLink, disputeLink, addComment, suggestEntry, suggestSource } fro
 import { EntryActions } from "@/app/components/entry-actions";
 import { CopyCite } from "@/app/components/copy-cite";
 import { VerifyBadge } from "@/app/components/verify-badge";
-import { BackLink } from "@/app/components/back-link";
+import { Breadcrumbs } from "@/app/components/breadcrumbs";
 import { buildCitation, originalSource } from "@/lib/cite";
 import { GROUP_ORDER, GROUP_LABELS } from "@/lib/instrument-labels";
 import { SectionTree } from "@/app/components/section-tree";
@@ -147,14 +147,9 @@ export default async function ActPage({
 
   return (
     <div className="space-y-8">
-      <nav className="text-sm text-stone-500 flex flex-wrap items-center gap-x-1">
-        <BackLink fallbackHref="/acts" />
-        <span className="mx-1">·</span>
-        <Link href="/acts" className="hover:underline">
-          กฎหมายแม่บท
-        </Link>{" "}
-        / <span className="text-stone-700">{act.shortName}</span>
-      </nav>
+      <Breadcrumbs
+        items={[{ label: "กฎหมายแม่บท", href: "/acts" }, { label: act.shortName }]}
+      />
 
       <header className="space-y-2">
         <div className="flex items-center gap-1.5 text-sm font-medium text-seal-700">

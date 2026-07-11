@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { TypeGlyph } from "@/app/components/geo-shape";
+import { Breadcrumbs } from "@/app/components/breadcrumbs";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +54,7 @@ export default async function ActsPage({
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "กฎหมายแม่บท" }]} backFallback="/" />
       <header className="space-y-1">
         <h1 className="text-2xl font-bold">กฎหมายแม่บททั้งหมด</h1>
         <p className="text-sm text-stone-500">

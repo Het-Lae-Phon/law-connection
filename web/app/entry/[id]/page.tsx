@@ -7,7 +7,7 @@ import { buildCitation, originalSource } from "@/lib/cite";
 import { confirmLink, disputeLink } from "@/lib/actions";
 import { CopyCite } from "@/app/components/copy-cite";
 import { VerifyBadge } from "@/app/components/verify-badge";
-import { BackLink } from "@/app/components/back-link";
+import { Breadcrumbs } from "@/app/components/breadcrumbs";
 import { BasisChips } from "@/app/components/basis-chips";
 import { TypeGlyph } from "@/app/components/geo-shape";
 import { sdkSlugFor } from "@/lib/thai-law";
@@ -58,9 +58,13 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="space-y-6">
-      <nav className="text-sm text-stone-500">
-        <BackLink fallbackHref="/entries" />
-      </nav>
+      <Breadcrumbs
+        items={[
+          { label: "กฎหมายลำดับรอง", href: "/entries" },
+          ...(entry.act ? [{ label: entry.act.shortName, href: `/act/${entry.act.id}` }] : []),
+          { label: "รายละเอียดฉบับ" },
+        ]}
+      />
 
       <header className="space-y-3">
         {entry.instrumentType && (

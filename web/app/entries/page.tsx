@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { formatThaiDate } from "@/lib/format";
 import { EntryActions } from "@/app/components/entry-actions";
+import { Breadcrumbs } from "@/app/components/breadcrumbs";
 
 export const dynamic = "force-dynamic";
 
@@ -60,6 +61,7 @@ export default async function EntriesPage({
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "กฎหมายลำดับรอง" }]} backFallback="/" />
       <header className="space-y-1">
         <h1 className="text-2xl font-bold">กฎหมายลำดับรองทั้งหมด</h1>
         <p className="text-sm text-stone-500">

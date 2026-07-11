@@ -7,6 +7,7 @@ import { buildCitation, originalSource } from "@/lib/cite";
 import { CopyCite } from "@/app/components/copy-cite";
 import { typesetLegalText, type Block } from "@/lib/typeset";
 import { sdkSlugFor } from "@/lib/thai-law";
+import { Breadcrumbs } from "@/app/components/breadcrumbs";
 
 // The Royal Gazette is typeset in TH Sarabun — use its Google-hosted sibling
 // so the reference copy reads like the printed original.
@@ -95,17 +96,14 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
 
   return (
     <div className="space-y-6">
-      <nav className="text-sm text-stone-500">
-        {entry.act && (
-          <>
-            <Link href={`/act/${entry.act.id}`} className="hover:underline">
-              {entry.act.shortName}
-            </Link>{" "}
-            /{" "}
-          </>
-        )}
-        <span className="text-stone-700">สำเนาอ้างอิง</span>
-      </nav>
+      <Breadcrumbs
+        items={[
+          ...(entry.act
+            ? [{ label: "กฎหมายแม่บท", href: "/acts" }, { label: entry.act.shortName, href: `/act/${entry.act.id}` }]
+            : [{ label: "กฎหมายลำดับรอง", href: "/entries" }]),
+          { label: "สำเนาอ้างอิง" },
+        ]}
+      />
 
       <header className="space-y-2">
         <h1 className="text-xl font-bold leading-snug">{entry.title}</h1>
