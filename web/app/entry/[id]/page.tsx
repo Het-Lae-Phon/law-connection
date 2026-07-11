@@ -55,6 +55,12 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
 
   const source = originalSource(entry);
   const hasText = !!entry.documentText;
+  // does the PARENT act have a structured-readable primary text?
+  const actHasText = entry.act
+    ? (await prisma.gazetteEntry.count({
+        where: { actId: entry.act.id, isPrimary: true, documentText: { isNot: null } },
+      })) > 0
+    : false;
 
   return (
     <div className="space-y-6">
@@ -68,7 +74,10 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
 
       <header className="space-y-3">
         {entry.instrumentType && (
-          <div className="text-sm font-medium text-seal-700">{entry.instrumentType}</div>
+          <div className="flex items-center gap-1.5 text-sm font-medium text-seal-700">
+            <TypeGlyph type={entry.instrumentType} size={13} />
+            {entry.instrumentType}
+          </div>
         )}
         <h1 className="text-xl font-bold leading-snug">
           {entry.title}
@@ -93,7 +102,9 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
             <BasisChips
               legalBasis={entry.legalBasis}
               label="ออกตามความใน"
-              sectionsHref={sdkSlugFor(entry.act) ? `/act/${entry.act.id}/sections` : undefined}
+              sectionsHref={
+                sdkSlugFor(entry.act) || actHasText ? `/act/${entry.act.id}/sections` : undefined
+              }
             />
             <span className="text-stone-500">{entry.legalBasis ? "แห่ง" : "ออกตามความใน"}</span>
             <Link href={`/act/${entry.act.id}`} className="inline-flex items-center gap-1.5 text-seal-700 hover:underline">

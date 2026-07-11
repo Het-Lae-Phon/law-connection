@@ -101,6 +101,7 @@ export default async function Home() {
                 href={`/entry/${e.id}`}
                 className="font-medium hover:text-seal-700 leading-snug block"
               >
+                <TypeGlyph type={e.instrumentType ?? e.title} size={12} className="mr-1.5" />
                 {e.title}
               </Link>
               <div className="text-sm text-stone-500 flex flex-wrap gap-x-3">

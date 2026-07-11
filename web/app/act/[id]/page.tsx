@@ -103,7 +103,10 @@ export default async function ActPage({
   ]);
   const countByType = new Map(typeCounts.map((t) => [t.instrumentType ?? "อื่น ๆ", t._count]));
   // structured section texts via the thai-law SDK — chips deep-link into them
-  const sectionsHref = sdkSlugFor(act) ? `/act/${act.id}/sections` : undefined;
+  // structured section texts: curated thai-law bundles OR machine-parsed from
+  // the act's own DocumentText — one reader, chips deep-link into it
+  const sectionsHref =
+    sdkSlugFor(act) || textEntry ? `/act/${act.id}/sections` : undefined;
 
   const orderedKeys = filterType
     ? [filterType]
@@ -393,6 +396,7 @@ export default async function ActPage({
                     <div className="space-y-1.5 min-w-0">
                       <div className="font-medium leading-snug">
                         <Link href={`/entry/${e.id}`} className="hover:text-seal-700 hover:underline">
+                          <TypeGlyph type={e.instrumentType ?? e.title} size={12} className="mr-1.5" />
                           {e.title}
                         </Link>
                         {e.isAmendment && (

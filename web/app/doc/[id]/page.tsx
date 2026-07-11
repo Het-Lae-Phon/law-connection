@@ -133,8 +133,12 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
         </div>
       </header>
 
-      {/* the structured reader supersedes this copy for SDK-covered acts */}
-      {entry.isPrimary && entry.act && sdkSlugFor(entry.act) && (
+      {/* the structured reader supersedes this copy when it can be built —
+          curated bundle, or this very text parses into ≥3 มาตรา */}
+      {entry.isPrimary &&
+        entry.act &&
+        (sdkSlugFor(entry.act) ||
+          (entry.documentText.text.match(/(^|\n)\s*มาตรา\s*[๐-๙0-9]/g)?.length ?? 0) >= 3) && (
         <div className="rounded-lg border border-seal-300 bg-seal-50 p-4 text-sm">
           กฎหมายฉบับนี้มี<b>ตัวบทฉบับเต็มแบบโครงสร้างรายมาตรา</b> —
           อ้างอิงเจาะรายมาตรา/รายวรรค พร้อมสถานะการตรวจทาน และอ่านย้อนเวลาได้{" "}
