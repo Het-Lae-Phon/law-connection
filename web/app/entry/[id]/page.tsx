@@ -8,6 +8,9 @@ import { confirmLink, disputeLink } from "@/lib/actions";
 import { CopyCite } from "@/app/components/copy-cite";
 import { VerifyBadge } from "@/app/components/verify-badge";
 import { BackLink } from "@/app/components/back-link";
+import { TypesetDocument } from "@/app/components/typeset-document";
+import { BasisChips } from "@/app/components/basis-chips";
+import { sdkSlugFor } from "@/lib/thai-law";
 
 export const dynamic = "force-dynamic";
 
@@ -75,17 +78,28 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
           <span>{formatThaiDate(entry.publishedAt)}</span>
           {entry.volume > 0 && (
             <span>
-              เล่ม {entry.volume} ตอนที่ {entry.issue} {entry.category} หน้า {entry.page}
+              เล่ม {entry.volume} ตอนที่ {entry.issue} {entry.category}
+              {entry.page > 0 ? ` หน้า ${entry.page}` : ""}
             </span>
           )}
           {ORIGIN_LABELS[entry.origin] && <span>{ORIGIN_LABELS[entry.origin]}</span>}
         </div>
         {entry.act && (
-          <div className="text-sm">
-            ออกตามความใน{" "}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+            <BasisChips
+              legalBasis={entry.legalBasis}
+              label="ออกตามความใน"
+              sectionsHref={sdkSlugFor(entry.act) ? `/act/${entry.act.id}/sections` : undefined}
+            />
+            <span className="text-stone-500">{entry.legalBasis ? "แห่ง" : "ออกตามความใน"}</span>
             <Link href={`/act/${entry.act.id}`} className="text-seal-700 hover:underline">
               {entry.act.fullName}
             </Link>
+          </div>
+        )}
+        {!entry.act && entry.legalBasis && (
+          <div className="text-sm">
+            <BasisChips legalBasis={entry.legalBasis} label="ออกตามความใน" />
           </div>
         )}
         <div className="flex flex-wrap items-center gap-2 pt-1">
@@ -139,6 +153,20 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
         </div>
       </header>
 
+      {/* the structured reader supersedes this copy for SDK-covered acts */}
+      {entry.isPrimary && entry.act && sdkSlugFor(entry.act) && (
+        <div className="rounded-lg border border-seal-300 bg-seal-50 p-4 text-sm">
+          กฎหมายฉบับนี้มี<b>ตัวบทฉบับเต็มแบบโครงสร้างรายมาตรา</b> —
+          อ้างอิงเจาะรายมาตรา/รายวรรค พร้อมสถานะการตรวจทาน และอ่านย้อนเวลาได้{" "}
+          <Link
+            href={`/act/${entry.act.id}/sections`}
+            className="font-medium text-seal-700 underline hover:text-seal-800"
+          >
+            เปิดฉบับโครงสร้าง →
+          </Link>
+        </div>
+      )}
+
       <section className="rounded-lg border border-stone-300 bg-white p-4 text-sm space-y-3">
         <div className="font-bold">การอ้างอิงและต้นฉบับ</div>
         <div className="flex flex-wrap gap-2">
@@ -152,15 +180,6 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
             >
               เปิดต้นฉบับ · {source.label} ↗
             </a>
-          )}
-          {!source && hasText && (
-            <Link
-              href={`/doc/${entry.id}`}
-              className="rounded border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-100"
-              title="สำเนาข้อความสำหรับอ้างอิง — ไม่ใช่ต้นฉบับ"
-            >
-              อ่านสำเนาข้อความเต็ม →
-            </Link>
           )}
         </div>
         {!source && !hasText && entry.volume > 0 && (
@@ -178,6 +197,8 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
           </p>
         )}
       </section>
+
+      {!source && hasText && <TypesetDocument text={entry.documentText!.text} />}
     </div>
   );
 }

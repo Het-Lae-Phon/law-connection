@@ -9,6 +9,12 @@ import { VerifyBadge } from "@/app/components/verify-badge";
 import { BackLink } from "@/app/components/back-link";
 import { buildCitation, originalSource } from "@/lib/cite";
 import { GROUP_ORDER, GROUP_LABELS } from "@/lib/instrument-labels";
+import { SectionTree } from "@/app/components/section-tree";
+import { VersionTimeline } from "@/app/components/version-timeline";
+import { CodeTimeline, codeTimelineFor } from "@/app/components/code-timeline";
+import { BookIndex, codeBooksFor } from "@/app/components/book-index";
+import { BasisChips } from "@/app/components/basis-chips";
+import { sdkSlugFor } from "@/lib/thai-law";
 
 // Thai government domains get an "official" badge on source links
 function isGovDomain(url: string): boolean {
@@ -35,7 +41,7 @@ export default async function ActPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ type?: string; page?: string }>;
+  searchParams: Promise<{ type?: string; page?: string; view?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
@@ -45,10 +51,13 @@ export default async function ActPage({
   // single-group drilldown view (?type=ประกาศ) — paginated
   const filterType = (sp.type ?? "").trim() || null;
   const page = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
+  // ?view=tree — word-tree branched by authorising section (มาตรา)
+  const treeView = sp.view === "tree";
 
   const act = await prisma.act.findUnique({
     where: { id: actId },
     include: {
+      repealedBy: { select: { id: true, fullName: true } },
       contributions: {
         where: { type: "comment", status: { not: "rejected" } },
         orderBy: { createdAt: "desc" },
@@ -58,7 +67,7 @@ export default async function ActPage({
   });
   if (!act) notFound();
 
-  const [typeCounts, subCount, verifiedCount, primaryEntry] = await Promise.all([
+  const [typeCounts, subCount, verifiedCount, primaryEntry, primaries, textEntry] = await Promise.all([
     prisma.gazetteEntry.groupBy({
       by: ["instrumentType"],
       where: { actId },
@@ -70,27 +79,72 @@ export default async function ActPage({
       where: { actId, isPrimary: true, isAmendment: false, volume: { gt: 0 } },
       orderBy: { publishedAt: "asc" },
     }),
+    prisma.gazetteEntry.findMany({
+      where: { actId, isPrimary: true },
+      orderBy: { publishedAt: { sort: "asc", nulls: "last" } },
+      select: {
+        id: true,
+        title: true,
+        publishedAt: true,
+        volume: true,
+        issue: true,
+        category: true,
+        page: true,
+        isAmendment: true,
+      },
+    }),
+    // full text readable on-site (e.g. ประมวลกฎหมาย imported from OCS)
+    prisma.gazetteEntry.findFirst({
+      where: { actId, isPrimary: true, documentText: { isNot: null } },
+      orderBy: { id: "desc" },
+      select: { id: true },
+    }),
   ]);
   const countByType = new Map(typeCounts.map((t) => [t.instrumentType ?? "อื่น ๆ", t._count]));
+  // structured section texts via the thai-law SDK — chips deep-link into them
+  const sectionsHref = sdkSlugFor(act) ? `/act/${act.id}/sections` : undefined;
 
-  const orderedKeys = filterType
-    ? [filterType]
-    : [
-        ...GROUP_ORDER.filter((k) => countByType.has(k)),
-        ...[...countByType.keys()].filter((k) => !GROUP_ORDER.includes(k)),
-      ];
+  // full type list regardless of the current filter, so the nav bar always
+  // shows every type — only the fetched/rendered groups below narrow to one
+  // when filterType is set.
+  const allKeys = [
+    ...GROUP_ORDER.filter((k) => countByType.has(k)),
+    ...[...countByType.keys()].filter((k) => !GROUP_ORDER.includes(k)),
+  ];
+  const orderedKeys = filterType ? [filterType] : allKeys;
 
   // fetch entries per group (limited), or one paginated group in drilldown mode
   const groups = new Map<string, Awaited<ReturnType<typeof prisma.gazetteEntry.findMany>>>();
-  for (const key of orderedKeys) {
-    const list = await prisma.gazetteEntry.findMany({
-      where: { actId, instrumentType: key === "อื่น ๆ" ? null : key },
-      orderBy: { publishedAt: { sort: "desc", nulls: "last" } },
-      take: filterType ? PER_PAGE : PER_GROUP,
-      skip: filterType ? (page - 1) * PER_PAGE : 0,
-    });
-    if (list.length) groups.set(key, list);
+  if (!treeView) {
+    for (const key of orderedKeys) {
+      const list = await prisma.gazetteEntry.findMany({
+        where: { actId, instrumentType: key === "อื่น ๆ" ? null : key },
+        orderBy: { publishedAt: { sort: "desc", nulls: "last" } },
+        take: filterType ? PER_PAGE : PER_GROUP,
+        skip: filterType ? (page - 1) * PER_PAGE : 0,
+      });
+      if (list.length) groups.set(key, list);
+    }
   }
+
+  // tree view: all non-primary entries, branched by section in the component
+  const treeEntries = treeView
+    ? await prisma.gazetteEntry.findMany({
+        where: { actId, isPrimary: false },
+        orderBy: { publishedAt: { sort: "desc", nulls: "last" } },
+        select: {
+          id: true,
+          title: true,
+          instrumentType: true,
+          legalBasis: true,
+          publishedAt: true,
+          volume: true,
+          issue: true,
+          category: true,
+          page: true,
+        },
+      })
+    : [];
 
   return (
     <div className="space-y-8">
@@ -106,6 +160,20 @@ export default async function ActPage({
       <header className="space-y-2">
         <div className="text-sm font-medium text-seal-700">{act.actType}</div>
         <h1 className="text-2xl font-bold leading-snug">{act.fullName}</h1>
+        {act.status === "repealed" && (
+          <div className="rounded border border-seal-300 bg-seal-50 px-3 py-2 text-sm text-seal-900">
+            <b>ยกเลิกแล้ว</b>
+            {act.repealedBy && (
+              <>
+                {" — โดย "}
+                <Link href={`/act/${act.repealedBy.id}`} className="font-medium underline hover:text-seal-700">
+                  {act.repealedBy.fullName}
+                </Link>
+              </>
+            )}
+            {" · ข้อมูลคงไว้เพื่อการอ้างอิงย้อนหลัง"}
+          </div>
+        )}
         <p className="text-stone-500 text-sm">
           กฎหมายลำดับรองและฉบับที่เกี่ยวข้องในระบบ {subCount.toLocaleString("th-TH")} ฉบับ
           {verifiedCount > 0 && ` · ยืนยันโดยชุมชนแล้ว ${verifiedCount.toLocaleString("th-TH")} ฉบับ`}{" "}
@@ -113,6 +181,16 @@ export default async function ActPage({
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
           <CopyCite citation={primaryEntry ? buildCitation(primaryEntry) : act.fullName} />
+          {/* one reader: the structured SDK text when covered (preamble +
+              anchored มาตรา/วรรค), else the DocumentText copy at /entry */}
+          {(sectionsHref || textEntry) && (
+            <Link
+              href={sectionsHref ?? `/entry/${textEntry!.id}`}
+              className="rounded bg-seal-700 text-white px-3 py-1.5 text-sm hover:bg-seal-800"
+            >
+              อ่านตัวบทฉบับเต็ม
+            </Link>
+          )}
           {primaryEntry &&
             (() => {
               const source = originalSource(primaryEntry);
@@ -207,36 +285,80 @@ export default async function ActPage({
         </details>
       </section>
 
-      {groups.size === 0 && (
+      {/* บรรพ index for codes that have one */}
+      {act.actType === "ประมวลกฎหมาย" && codeBooksFor(act.shortName) && (
+        <BookIndex shortName={act.shortName} docId={textEntry?.id} />
+      )}
+
+      {/* codes get the official OCS amendment history; other acts use the
+          timeline derived from the gazette editions we hold */}
+      {(() => {
+        const codeTl = act.actType === "ประมวลกฎหมาย" ? codeTimelineFor(act.shortName) : null;
+        return codeTl ? (
+          <CodeTimeline data={codeTl} />
+        ) : (
+          <VersionTimeline
+            primaries={primaries}
+            repealedBy={act.status === "repealed" ? act.repealedBy : null}
+          />
+        );
+      })()}
+
+      {/* view toggle: type-grouped list ↔ word-tree by authorising section */}
+      {subCount > 0 && (
+        <div className="inline-flex rounded-lg border border-stone-300 bg-white p-1 text-sm">
+          <Link
+            href={`/act/${act.id}`}
+            className={`rounded px-4 py-1.5 ${!treeView ? "bg-stone-900 text-white" : "text-stone-600 hover:bg-stone-100"}`}
+          >
+            รายการตามประเภท
+          </Link>
+          <Link
+            href={`/act/${act.id}?view=tree`}
+            className={`rounded px-4 py-1.5 ${treeView ? "bg-stone-900 text-white" : "text-stone-600 hover:bg-stone-100"}`}
+          >
+            ต้นไม้ตามมาตรา
+          </Link>
+        </div>
+      )}
+
+      {treeView && (
+        <section className="rounded-lg border border-dashed border-stone-300 bg-white p-5 sm:p-8 overflow-x-auto">
+          <p className="cat-code mb-4">โครงสร้างสายอำนาจตามมาตรา</p>
+          <SectionTree actName={act.fullName} entries={treeEntries} sectionsHref={sectionsHref} />
+        </section>
+      )}
+
+      {!treeView && groups.size === 0 && (
         <p className="text-stone-500">
           ยังไม่มีประกาศที่เชื่อมโยงกับกฎหมายฉบับนี้ในช่วงข้อมูลที่มี
         </p>
       )}
 
-      {!filterType && groups.size > 1 && (
+      {!treeView && allKeys.length > 1 && (
         <nav className="sticky top-0 z-10 -mx-4 border-b border-stone-200 bg-stone-50/95 px-4 py-2 backdrop-blur">
           <ul className="flex flex-wrap gap-2 text-sm">
-            {orderedKeys.filter((k) => groups.has(k)).map((key) => (
-              <li key={key}>
-                <a
-                  href={`#group-${key}`}
-                  className="inline-block rounded-full border border-stone-300 bg-white px-3 py-1 text-stone-700 hover:border-seal-300 hover:text-seal-800"
-                >
-                  {GROUP_LABELS[key] ?? key}{" "}
-                  <span className="text-stone-400">({(countByType.get(key) ?? 0).toLocaleString("th-TH")})</span>
-                </a>
-              </li>
-            ))}
+            {allKeys.map((key) => {
+              const selected = filterType === key;
+              return (
+                <li key={key}>
+                  <Link
+                    href={selected ? `/act/${act.id}` : `/act/${act.id}?type=${encodeURIComponent(key)}`}
+                    className={
+                      selected
+                        ? "inline-flex items-center gap-1 rounded-full border border-seal-500 bg-seal-50 px-3 py-1 text-seal-800"
+                        : "inline-block rounded-full border border-stone-300 bg-white px-3 py-1 text-stone-700 hover:border-seal-300 hover:text-seal-800"
+                    }
+                  >
+                    {GROUP_LABELS[key] ?? key}{" "}
+                    <span className="text-stone-400">({(countByType.get(key) ?? 0).toLocaleString("th-TH")})</span>
+                    {selected && <span className="ml-0.5">✕</span>}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </nav>
-      )}
-
-      {filterType && (
-        <p className="text-sm">
-          <Link href={`/act/${act.id}`} className="text-seal-700 hover:underline">
-            ← กลับไปหน้ารวมทุกประเภท
-          </Link>
-        </p>
       )}
 
       {orderedKeys.filter((k) => groups.has(k)).map((key) => {
@@ -278,9 +400,14 @@ export default async function ActPage({
                       </div>
                       <div className="text-sm text-stone-500">
                         {formatThaiDate(e.publishedAt)}
-                        {e.volume > 0 && ` · เล่ม ${e.volume} ตอนที่ ${e.issue} ${e.category} หน้า ${e.page}`}
+                        {e.volume > 0 && ` · เล่ม ${e.volume} ตอนที่ ${e.issue} ${e.category}${e.page > 0 ? ` หน้า ${e.page}` : ""}`}
                         {ORIGIN_LABELS[e.origin] && ` · ${ORIGIN_LABELS[e.origin]}`}
                       </div>
+                      {e.legalBasis && (
+                        <div>
+                          <BasisChips legalBasis={e.legalBasis} sectionsHref={sectionsHref} />
+                        </div>
+                      )}
                       <div className="flex flex-wrap items-center gap-2">
                         <VerifyBadge status={e.verifyStatus} source={e.linkSource} />
                         <details className="text-xs">
