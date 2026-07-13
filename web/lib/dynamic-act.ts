@@ -29,6 +29,10 @@ const HEADING_KIND: [RegExp, StructuralNode["kind"]][] = [
   [/^ส่วนที่\s*[๐-๙0-9]/, "part"],
 ];
 
+// numbered/lettered subitems — "(๑) ...", "(ก) ..." — are part of the SAME
+// วรรค they follow (อนุมาตรา), never a new วรรค of their own
+const ITEM_RE = /^\(\s*([๐-๙0-9]+(?:\/[๐-๙0-9]+)?|[ก-ฮ])\s*\)\s*/;
+
 export interface DynamicAct {
   entryId: number;
   title: string;
@@ -54,7 +58,7 @@ export interface DynamicAct {
  *  others flatten into front/back matter. */
 export function parseDynamicSections(
   text: string,
-  opts: { actId: number; validFrom: string; citation: string },
+  opts: { actId: number; validFrom: string; citation: string; lineLevel?: boolean },
 ): Pick<DynamicAct, "preambleLines" | "tailLines" | "noteLines" | "structure" | "sections" | "byId"> | null {
   const blocks = typesetLegalText(text);
 
@@ -92,6 +96,40 @@ export function parseDynamicSections(
   let current: SectionRecord | null = null;
   let headingHost: StructuralNode | null = null; // open chapter/part node
 
+  // route a chunk of text into the current section: (๑)/(ก) chunks become
+  // items/subitems of the last วรรค (อนุมาตรา are NOT วรรค); anything else
+  // starts a new วรรค
+  const appendChunk = (rec: SectionRecord, chunk: string) => {
+    const paras = rec.versions[0].paragraphs;
+    const m = chunk.match(ITEM_RE);
+    if (m && paras.length > 0) {
+      const last = paras[paras.length - 1];
+      const items = (last.items ??= []);
+      const body = chunk.slice(m[0].length).trim();
+      if (/^[ก-ฮ]$/.test(m[1]) && items.length > 0) {
+        const li = items[items.length - 1];
+        (li.subitems ??= []).push({ id: m[1], num_th: `(${m[1]})`, text_th: body });
+      } else {
+        items.push({ id: arabic(m[1]), num_th: `(${m[1]})`, text_th: body, subitems: [] });
+      }
+    } else {
+      paras.push({ id: `p${paras.length + 1}`, text_th: chunk });
+    }
+  };
+  // OCS copies put each real block element on its own line, so lines can be
+  // split into วรรค/items safely; Krisdika texts hard-wrap mid-sentence, so
+  // there only whole blank-line blocks are split (handled by the caller)
+  const appendBlock = (rec: SectionRecord, b: { joined: string; lines: string[] }) => {
+    if (opts.lineLevel) {
+      for (const line of b.lines) {
+        const t = line.replace(/\s+/g, " ").trim();
+        if (t) appendChunk(rec, t);
+      }
+    } else {
+      appendChunk(rec, b.joined);
+    }
+  };
+
   const pushRef = (rec: SectionRecord) => {
     const ref: StructuralNode = { id: `${rec.id}#ref`, kind: "section_ref", section: rec.id };
     (headingHost ? (headingHost.children ??= []) : structure).push(ref);
@@ -128,11 +166,8 @@ export function parseDynamicSections(
           };
           structure.push(headingHost);
         } else if (current) {
-          // schedules/fee tables etc. — keep as a paragraph of the last section
-          current.versions[0].paragraphs.push({
-            id: `p${current.versions[0].paragraphs.length + 1}`,
-            text_th: head,
-          });
+          // schedules/fee tables etc. — keep with the last section
+          appendChunk(current, head);
         } else {
           preambleLines.push(head);
         }
@@ -161,22 +196,22 @@ export function parseDynamicSections(
               version: 1,
               valid_from: opts.validFrom,
               valid_to: null,
-              paragraphs: [{ id: "p1", text_th: b.joined }],
+              paragraphs: [],
               source: { gazette_citation: opts.citation, verification_status: "machine_parsed" },
             },
           ],
         };
+        appendBlock(rec, b);
+        if (rec.versions[0].paragraphs.length === 0)
+          rec.versions[0].paragraphs.push({ id: "p1", text_th: b.joined });
         records.push(rec);
         pushRef(rec);
         current = rec;
       } else if (records.length === 0) {
         preambleLines.push(...(b.kind === "para" ? [b.joined] : b.lines));
       } else if (current) {
-        // a following วรรค of the current section
-        current.versions[0].paragraphs.push({
-          id: `p${current.versions[0].paragraphs.length + 1}`,
-          text_th: b.joined,
-        });
+        // a following วรรค — or (๑)/(ก) อนุมาตรา of the last วรรค
+        appendBlock(current, b);
       }
     }
   });
@@ -215,6 +250,8 @@ export async function getDynamicAct(actId: number): Promise<DynamicAct | null> {
     actId,
     validFrom,
     citation: buildCitation(entry),
+    // OCS copies: one real block element per line → line-level วรรค/item split
+    lineLevel: entry.origin === "ocs",
   });
   if (!parsed) return null;
 

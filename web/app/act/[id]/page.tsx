@@ -16,6 +16,7 @@ import { BookIndex, codeBooksFor } from "@/app/components/book-index";
 import { TypeGlyph } from "@/app/components/geo-shape";
 import { BasisChips } from "@/app/components/basis-chips";
 import { sdkSlugFor } from "@/lib/thai-law";
+import { SubRegYearRail, type YearBucket } from "@/app/components/subreg-year-rail";
 
 // Thai government domains get an "official" badge on source links
 function isGovDomain(url: string): boolean {
@@ -42,7 +43,7 @@ export default async function ActPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ type?: string; page?: string; view?: string }>;
+  searchParams: Promise<{ type?: string; page?: string; view?: string; year?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
@@ -54,6 +55,16 @@ export default async function ActPage({
   const page = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
   // ?view=tree — word-tree branched by authorising section (มาตรา)
   const treeView = sp.view === "tree";
+  // ?year=<พ.ศ.> — filter the list to sub-regulations issued that year
+  const yearBE = /^25[0-9]{2}$/.test(sp.year ?? "") ? parseInt(sp.year!, 10) : undefined;
+  const yearWhere = yearBE
+    ? {
+        publishedAt: {
+          gte: new Date(Date.UTC(yearBE - 543, 0, 1)),
+          lt: new Date(Date.UTC(yearBE - 543 + 1, 0, 1)),
+        },
+      }
+    : {};
 
   const act = await prisma.act.findUnique({
     where: { id: actId },
@@ -68,10 +79,10 @@ export default async function ActPage({
   });
   if (!act) notFound();
 
-  const [typeCounts, subCount, verifiedCount, primaryEntry, primaries, textEntry] = await Promise.all([
+  const [typeCounts, subCount, verifiedCount, primaryEntry, primaries, textEntry, subRegDates] = await Promise.all([
     prisma.gazetteEntry.groupBy({
       by: ["instrumentType"],
-      where: { actId },
+      where: { actId, ...yearWhere },
       _count: true,
     }),
     prisma.gazetteEntry.count({ where: { actId, isPrimary: false } }),
@@ -100,7 +111,20 @@ export default async function ActPage({
       orderBy: { id: "desc" },
       select: { id: true },
     }),
+    // when each sub-regulation came out — bucketed per year for the rail
+    prisma.gazetteEntry.findMany({
+      where: { actId, isPrimary: false, publishedAt: { not: null } },
+      select: { publishedAt: true },
+    }),
   ]);
+  const yearBuckets: YearBucket[] = (() => {
+    const m = new Map<number, number>();
+    for (const e of subRegDates) {
+      const y = e.publishedAt!.getUTCFullYear() + 543;
+      m.set(y, (m.get(y) ?? 0) + 1);
+    }
+    return [...m.entries()].sort((a, b) => b[0] - a[0]).map(([yearBE, count]) => ({ yearBE, count }));
+  })();
   const countByType = new Map(typeCounts.map((t) => [t.instrumentType ?? "อื่น ๆ", t._count]));
   // structured section texts via the thai-law SDK — chips deep-link into them
   // structured section texts: curated thai-law bundles OR machine-parsed from
@@ -120,7 +144,7 @@ export default async function ActPage({
   if (!treeView) {
     for (const key of orderedKeys) {
       const list = await prisma.gazetteEntry.findMany({
-        where: { actId, instrumentType: key === "อื่น ๆ" ? null : key },
+        where: { actId, instrumentType: key === "อื่น ๆ" ? null : key, ...yearWhere },
         orderBy: { publishedAt: { sort: "desc", nulls: "last" } },
         take: filterType ? PER_PAGE : PER_GROUP,
         skip: filterType ? (page - 1) * PER_PAGE : 0,
@@ -303,6 +327,18 @@ export default async function ActPage({
           />
         );
       })()}
+
+      {/* when the sub-regulations actually came out, year by year */}
+      <SubRegYearRail actId={act.id} buckets={yearBuckets} activeYearBE={yearBE} />
+
+      {yearBE && (
+        <p className="rounded border border-seal-300 bg-seal-50 px-3 py-2 text-sm text-seal-900">
+          แสดงเฉพาะฉบับที่ประกาศในปี <b>พ.ศ. {yearBE}</b>{" "}
+          <Link href={`/act/${act.id}`} className="font-medium underline hover:text-seal-700">
+            ล้างตัวกรอง
+          </Link>
+        </p>
+      )}
 
       {/* view toggle: type-grouped list ↔ word-tree by authorising section */}
       {subCount > 0 && (
