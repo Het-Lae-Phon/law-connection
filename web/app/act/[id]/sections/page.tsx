@@ -4,7 +4,6 @@ import { Sarabun } from "next/font/google";
 import { prisma } from "@/lib/db";
 import { Breadcrumbs } from "@/app/components/breadcrumbs";
 import { CopyCite } from "@/app/components/copy-cite";
-import { TypeGlyph } from "@/app/components/geo-shape";
 import {
   sdkSlugFor,
   getManifest,
@@ -251,7 +250,6 @@ export default async function ActSectionsPage({
 
       <header className="space-y-2">
         <div className="flex items-center gap-1.5 text-sm font-medium text-seal-700">
-          <TypeGlyph type={act.actType} size={14} />
           {act.actType} · {data.statusLabel}
         </div>
         <h1 className="text-2xl font-bold leading-snug">{data.title}</h1>

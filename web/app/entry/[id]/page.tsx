@@ -8,7 +8,6 @@ import { confirmLink, disputeLink } from "@/lib/actions";
 import { CopyCite } from "@/app/components/copy-cite";
 import { VerifyBadge } from "@/app/components/verify-badge";
 import { Breadcrumbs } from "@/app/components/breadcrumbs";
-import { TypeGlyph } from "@/app/components/geo-shape";
 import { TypesetDocument } from "@/app/components/typeset-document";
 import { BasisChips } from "@/app/components/basis-chips";
 import { sdkSlugFor } from "@/lib/thai-law";
@@ -76,7 +75,6 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
       <header className="space-y-3">
         {entry.instrumentType && (
           <div className="flex items-center gap-1.5 text-sm font-medium text-seal-700">
-            <TypeGlyph type={entry.instrumentType} size={13} />
             {entry.instrumentType}
           </div>
         )}
@@ -109,7 +107,6 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
             />
             <span className="text-stone-500">{entry.legalBasis ? "แห่ง" : "ออกตามความใน"}</span>
             <Link href={`/act/${entry.act.id}`} className="inline-flex items-center gap-1.5 text-seal-700 hover:underline">
-              <TypeGlyph type={entry.act.actType} size={12} />
               {entry.act.fullName}
             </Link>
           </div>

@@ -4,7 +4,6 @@ import { prisma } from "@/lib/db";
 import { actTypeStyle } from "@/lib/act-type-colors";
 import { TypeFilterForm } from "@/app/components/type-filter-form";
 import { Breadcrumbs } from "@/app/components/breadcrumbs";
-import { TypeGlyph } from "@/app/components/geo-shape";
 
 export const dynamic = "force-dynamic";
 
@@ -107,7 +106,6 @@ export default async function ActsPage({
             >
               <span className={`size-2.5 shrink-0 rounded-full ${style.dot}`} />
               <span className="min-w-0 truncate text-lg font-medium">
-                <TypeGlyph type={a.actType} size={13} className="mr-1.5" />
                 {a.fullName}
               </span>
               <span className="flex shrink-0 items-center gap-3">

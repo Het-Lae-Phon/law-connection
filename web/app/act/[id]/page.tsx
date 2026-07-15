@@ -13,7 +13,6 @@ import { SectionTree } from "@/app/components/section-tree";
 import { VersionTimeline } from "@/app/components/version-timeline";
 import { CodeTimeline, codeTimelineFor } from "@/app/components/code-timeline";
 import { BookIndex, codeBooksFor } from "@/app/components/book-index";
-import { TypeGlyph } from "@/app/components/geo-shape";
 import { BasisChips } from "@/app/components/basis-chips";
 import { sdkSlugFor } from "@/lib/thai-law";
 import { SubRegYearRail, type YearBucket } from "@/app/components/subreg-year-rail";
@@ -182,7 +181,6 @@ export default async function ActPage({
 
       <header className="space-y-2">
         <div className="flex items-center gap-1.5 text-sm font-medium text-seal-700">
-          <TypeGlyph type={act.actType} size={14} />
           {act.actType}
         </div>
         <h1 className="text-2xl font-bold leading-snug">{act.fullName}</h1>
@@ -313,7 +311,7 @@ export default async function ActPage({
 
       {/* geometric บรรพ index (สารบาญ visual language) for codes that have one */}
       {act.actType === "ประมวลกฎหมาย" && codeBooksFor(act.shortName) && (
-        <BookIndex shortName={act.shortName} emblemName={act.fullName} docId={textEntry?.id} />
+        <BookIndex shortName={act.shortName} docId={textEntry?.id} />
       )}
 
       {/* codes get the official OCS amendment history; other acts use the
@@ -363,12 +361,7 @@ export default async function ActPage({
       {treeView && (
         <section className="rounded-lg border border-dashed border-stone-300 bg-white p-5 sm:p-8 overflow-x-auto">
           <p className="cat-code mb-4">AUTHORITY&nbsp;TREE&nbsp;·&nbsp;โครงสร้างสายอำนาจตามมาตรา</p>
-          <SectionTree
-            actName={act.fullName}
-            actType={act.actType}
-            entries={treeEntries}
-            sectionsHref={sectionsHref}
-          />
+          <SectionTree actName={act.fullName} entries={treeEntries} sectionsHref={sectionsHref} />
         </section>
       )}
 
@@ -412,7 +405,6 @@ export default async function ActPage({
         return (
           <section key={key} id={`group-${key}`} className="scroll-mt-16">
             <h2 className="text-lg font-bold mb-3 flex items-baseline gap-2">
-              <TypeGlyph type={key} size={13} className="self-center" />
               {GROUP_LABELS[key] ?? key}
               <span className="text-sm font-normal text-stone-400">
                 {total.toLocaleString("th-TH")} ฉบับ
@@ -435,7 +427,6 @@ export default async function ActPage({
                     <div className="space-y-1.5 min-w-0">
                       <div className="font-medium leading-snug">
                         <Link href={`/entry/${e.id}`} className="hover:text-seal-700 hover:underline">
-                          <TypeGlyph type={e.instrumentType ?? e.title} size={12} className="mr-1.5" />
                           {e.title}
                         </Link>
                         {e.isAmendment && (

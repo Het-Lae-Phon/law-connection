@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { formatThaiDate } from "@/lib/format";
 import { BasisChips } from "./basis-chips";
-import { TypeGlyph } from "./geo-shape";
 
 /**
  * Word-tree of an act's subordinate legislation, branched by the authorising
@@ -57,13 +56,10 @@ function refLine(e: TreeEntry): string {
 
 export function SectionTree({
   actName,
-  actType,
   entries,
   sectionsHref,
 }: {
   actName: string;
-  /** the parent act's type — its rank glyph is shown at the tree root */
-  actType?: string;
   entries: TreeEntry[];
   /** when set, มาตรา chips link into the structured section text */
   sectionsHref?: string;
@@ -97,7 +93,6 @@ export function SectionTree({
       <div className="space-y-1">
         <p className="cat-code">กฎหมายแม่บท&nbsp;·&nbsp;PARENT&nbsp;ACT</p>
         <div className="flex flex-wrap items-center gap-3">
-          {actType && <TypeGlyph type={actType} size={16} />}
           <span className="label-metal text-white px-2.5 py-1 text-sm font-semibold [text-shadow:0_1px_1px_rgba(0,0,0,0.35)]">
             {actName}
           </span>
@@ -122,7 +117,6 @@ export function SectionTree({
               {g.entries.map((e) => (
                 <li key={e.id} className="text-sm leading-snug">
                   <Link href={`/entry/${e.id}`} className="hover:text-seal-700">
-                    <TypeGlyph type={e.instrumentType} size={11} className="mr-1.5" />
                     {e.title}
                   </Link>
                   {/* the authorising sections written out as a property */}
@@ -147,7 +141,6 @@ export function SectionTree({
               {noBasis.map((e) => (
                 <li key={e.id} className="text-sm leading-snug">
                   <Link href={`/entry/${e.id}`} className="hover:text-seal-700">
-                    <TypeGlyph type={e.instrumentType} size={11} className="mr-1.5" />
                     {e.title}
                   </Link>
                   <div className="text-xs text-stone-400">{refLine(e)}</div>
