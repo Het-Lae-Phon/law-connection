@@ -7,7 +7,8 @@ import { buildCitation, originalSource } from "@/lib/cite";
 import { confirmLink, disputeLink } from "@/lib/actions";
 import { CopyCite } from "@/app/components/copy-cite";
 import { VerifyBadge } from "@/app/components/verify-badge";
-import { BackLink } from "@/app/components/back-link";
+import { Breadcrumbs } from "@/app/components/breadcrumbs";
+import { TypeGlyph } from "@/app/components/geo-shape";
 import { TypesetDocument } from "@/app/components/typeset-document";
 import { BasisChips } from "@/app/components/basis-chips";
 import { sdkSlugFor } from "@/lib/thai-law";
@@ -55,16 +56,29 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
 
   const source = originalSource(entry);
   const hasText = !!entry.documentText;
+  // does the PARENT act have a structured-readable primary text?
+  const actHasText = entry.act
+    ? (await prisma.gazetteEntry.count({
+        where: { actId: entry.act.id, isPrimary: true, documentText: { isNot: null } },
+      })) > 0
+    : false;
 
   return (
     <div className="space-y-6">
-      <nav className="text-sm text-stone-500">
-        <BackLink fallbackHref="/entries" />
-      </nav>
+      <Breadcrumbs
+        items={[
+          { label: "กฎหมายลำดับรอง", href: "/entries" },
+          ...(entry.act ? [{ label: entry.act.shortName, href: `/act/${entry.act.id}` }] : []),
+          { label: "รายละเอียดฉบับ" },
+        ]}
+      />
 
       <header className="space-y-3">
         {entry.instrumentType && (
-          <div className="text-sm font-medium text-seal-700">{entry.instrumentType}</div>
+          <div className="flex items-center gap-1.5 text-sm font-medium text-seal-700">
+            <TypeGlyph type={entry.instrumentType} size={13} />
+            {entry.instrumentType}
+          </div>
         )}
         <h1 className="text-xl font-bold leading-snug">
           {entry.title}
@@ -89,10 +103,13 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
             <BasisChips
               legalBasis={entry.legalBasis}
               label="ออกตามความใน"
-              sectionsHref={sdkSlugFor(entry.act) ? `/act/${entry.act.id}/sections` : undefined}
+              sectionsHref={
+                sdkSlugFor(entry.act) || actHasText ? `/act/${entry.act.id}/sections` : undefined
+              }
             />
             <span className="text-stone-500">{entry.legalBasis ? "แห่ง" : "ออกตามความใน"}</span>
-            <Link href={`/act/${entry.act.id}`} className="text-seal-700 hover:underline">
+            <Link href={`/act/${entry.act.id}`} className="inline-flex items-center gap-1.5 text-seal-700 hover:underline">
+              <TypeGlyph type={entry.act.actType} size={12} />
               {entry.act.fullName}
             </Link>
           </div>
@@ -154,7 +171,10 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
       </header>
 
       {/* the structured reader supersedes this copy for SDK-covered acts */}
-      {entry.isPrimary && entry.act && sdkSlugFor(entry.act) && (
+      {entry.isPrimary &&
+        entry.act &&
+        (sdkSlugFor(entry.act) ||
+          (entry.documentText?.text.match(/(^|\n)\s*มาตรา\s*[๐-๙0-9]/g)?.length ?? 0) >= 3) && (
         <div className="rounded-lg border border-seal-300 bg-seal-50 p-4 text-sm">
           กฎหมายฉบับนี้มี<b>ตัวบทฉบับเต็มแบบโครงสร้างรายมาตรา</b> —
           อ้างอิงเจาะรายมาตรา/รายวรรค พร้อมสถานะการตรวจทาน และอ่านย้อนเวลาได้{" "}

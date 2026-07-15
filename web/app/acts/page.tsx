@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { actTypeStyle } from "@/lib/act-type-colors";
 import { TypeFilterForm } from "@/app/components/type-filter-form";
+import { Breadcrumbs } from "@/app/components/breadcrumbs";
+import { TypeGlyph } from "@/app/components/geo-shape";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +60,7 @@ export default async function ActsPage({
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "กฎหมายแม่บท" }]} backFallback="/" />
       <header className="space-y-1">
         <h1 className="text-2xl font-bold font-[family-name:var(--font-serif-thai)]">กฎหมายแม่บททั้งหมด</h1>
         <p className="text-sm text-stone-500">
@@ -103,7 +106,10 @@ export default async function ActsPage({
               className="grid grid-cols-[auto_1fr_auto] items-center gap-4 rule-dashed py-5 hover:bg-seal-50/40"
             >
               <span className={`size-2.5 shrink-0 rounded-full ${style.dot}`} />
-              <span className="min-w-0 truncate text-lg font-medium">{a.fullName}</span>
+              <span className="min-w-0 truncate text-lg font-medium">
+                <TypeGlyph type={a.actType} size={13} className="mr-1.5" />
+                {a.fullName}
+              </span>
               <span className="flex shrink-0 items-center gap-3">
                 <span
                   className={`border border-dashed border-stone-300 px-2 py-0.5 font-[family-name:var(--font-plex-mono)] text-[10px] tracking-[0.1em] uppercase ${style.text}`}

@@ -4,6 +4,8 @@ import { prisma } from "@/lib/db";
 import { formatThaiDate } from "@/lib/format";
 import { EntryActions } from "@/app/components/entry-actions";
 import { TypeFilterForm } from "@/app/components/type-filter-form";
+import { Breadcrumbs } from "@/app/components/breadcrumbs";
+import { TypeGlyph } from "@/app/components/geo-shape";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +63,7 @@ export default async function EntriesPage({
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "กฎหมายลำดับรอง" }]} backFallback="/" />
       <header className="space-y-1">
         <h1 className="text-2xl font-bold">กฎหมายลำดับรองทั้งหมด</h1>
         <p className="text-sm text-stone-500">
@@ -93,6 +96,7 @@ export default async function EntriesPage({
               <div className="flex items-start justify-between gap-4">
                 <div className="font-medium leading-snug">
                   <Link href={`/entry/${e.id}`} className="hover:text-seal-700 hover:underline">
+                    <TypeGlyph type={e.instrumentType ?? e.title} size={12} className="mr-1.5" />
                     {e.title}
                   </Link>
                 </div>

@@ -4,6 +4,8 @@ import { formatThaiDate } from "@/lib/format";
 import { EntryActions } from "@/app/components/entry-actions";
 import { SearchBox } from "@/app/components/search-box";
 import { searchActsRanked, searchEntries } from "@/lib/search";
+import { Breadcrumbs } from "@/app/components/breadcrumbs";
+import { TypeGlyph } from "@/app/components/geo-shape";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +46,7 @@ export default async function SearchPage({
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "ค้นหา" }]} backFallback="/" />
       <h1 className="text-2xl font-bold">ค้นหา</h1>
 
       <div className="max-w-2xl">
@@ -198,7 +201,10 @@ async function ActsResults({
               href={`/act/${a.id}`}
               className="flex items-baseline justify-between gap-4 p-4 hover:bg-seal-50"
             >
-              <span className="font-medium leading-snug">{a.fullName}</span>
+              <span className="font-medium leading-snug flex items-start gap-1.5">
+                <TypeGlyph type={a.actType} size={12} className="mt-1.5 shrink-0" />
+                {a.fullName}
+              </span>
               <span className="shrink-0 text-sm text-stone-500">
                 {a._count.entries.toLocaleString("th-TH")} ฉบับ
               </span>
@@ -251,6 +257,7 @@ async function EntriesResults({
           <li key={e.id} className="p-4 space-y-1">
             <div className="flex items-start justify-between gap-4">
               <Link href={`/entry/${e.id}`} className="font-medium leading-snug hover:text-seal-700">
+                <TypeGlyph type={e.instrumentType ?? e.title} size={12} className="mr-1.5" />
                 {e.title}
               </Link>
               <EntryActions entry={e} />

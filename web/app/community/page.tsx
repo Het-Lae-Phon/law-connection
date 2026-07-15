@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { formatThaiDate } from "@/lib/format";
 import { moderate, suggestAct } from "@/lib/actions";
+import { Breadcrumbs } from "@/app/components/breadcrumbs";
 
 export const dynamic = "force-dynamic";
 
@@ -103,6 +104,7 @@ export default async function CommunityPage() {
 
   return (
     <div className="space-y-8">
+      <Breadcrumbs items={[{ label: "การตรวจสอบโดยชุมชน" }]} backFallback="/" />
       <header className="space-y-2">
         <h1 className="text-2xl font-bold">การตรวจสอบโดยชุมชน</h1>
         <p className="text-stone-600 text-sm max-w-3xl">
