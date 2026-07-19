@@ -17,13 +17,18 @@ import { BasisChips } from "@/app/components/basis-chips";
 import { sdkSlugFor } from "@/lib/thai-law";
 import { SubRegYearRail, type YearBucket } from "@/app/components/subreg-year-rail";
 
-// Thai government domains get an "official" badge on source links
-function isGovDomain(url: string): boolean {
+// Thai government domains get an "official" badge on source links; a few
+// known private legal databases (attach-your-own-link flow) get their own
+function sourceBadge(url: string): { label: string; cls: string } | null {
   try {
     const host = new URL(url).hostname;
-    return host.endsWith(".go.th") || host.endsWith(".or.th");
+    if (host.endsWith(".go.th") || host.endsWith(".or.th"))
+      return { label: "เว็บไซต์หน่วยงานรัฐ", cls: "bg-blue-100 text-blue-800" };
+    if (host.endsWith("fourcorners.law"))
+      return { label: "ฐานข้อมูลกฎหมายเอกชน (ต้องมีบัญชี)", cls: "bg-stone-200 text-stone-700" };
+    return null;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -260,11 +265,12 @@ export default async function ActPage({
                 >
                   {s.title} ↗
                 </a>
-                {isGovDomain(s.url) && (
-                  <span className="rounded bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5">
-                    เว็บไซต์หน่วยงานรัฐ
-                  </span>
-                )}
+                {(() => {
+                  const b = sourceBadge(s.url);
+                  return b ? (
+                    <span className={`rounded text-xs px-1.5 py-0.5 ${b.cls}`}>{b.label}</span>
+                  ) : null;
+                })()}
                 {s.publisher && <span className="text-stone-500">{s.publisher}</span>}
                 <span className="text-xs text-stone-400">
                   เพิ่มโดย {s.contributor || "ไม่ระบุชื่อ"}
