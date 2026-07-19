@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { formatThaiDate } from "@/lib/format";
 import { buildCitation, originalSource } from "@/lib/cite";
-import { confirmLink, disputeLink } from "@/lib/actions";
+import { confirmLink, disputeLink, suggestLink } from "@/lib/actions";
 import { CopyCite } from "@/app/components/copy-cite";
 import { VerifyBadge } from "@/app/components/verify-badge";
 import { Breadcrumbs } from "@/app/components/breadcrumbs";
@@ -213,6 +213,38 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
             โดยใช้เลขที่เล่ม/ตอนด้านบน
           </p>
         )}
+        <details className="pt-1">
+          <summary className="cursor-pointer text-sm text-seal-700 hover:underline">
+            + แนบลิงก์ต้นฉบับที่ค้นเจอเอง
+          </summary>
+          <p className="mt-2 text-xs text-stone-500">
+            พบลิงก์ต้นฉบับที่ถูกต้อง (ราชกิจจานุเบกษา หรือเว็บไซต์หน่วยงานทางการ)?
+            แนบไว้ที่นี่ — ระบบจะตรวจว่าลิงก์เปิดได้ แล้วเข้าคิวให้ผู้ตรวจยืนยันก่อนแสดงผล
+          </p>
+          <form action={suggestLink} className="mt-2 grid gap-2 sm:grid-cols-2">
+            <input type="hidden" name="entryId" value={entry.id} />
+            <input
+              name="url"
+              type="url"
+              required
+              placeholder="https://ratchakitcha.soc.go.th/documents/... *"
+              className="rounded border border-stone-300 p-2 text-sm sm:col-span-2"
+            />
+            <input
+              name="note"
+              placeholder="หมายเหตุ เช่น พบจากเว็บไซต์กรม... (ไม่บังคับ)"
+              className="rounded border border-stone-300 p-2 text-sm"
+            />
+            <input
+              name="contributor"
+              placeholder="ชื่อ/สังกัด (ไม่บังคับ)"
+              className="rounded border border-stone-300 p-2 text-sm"
+            />
+            <button className="rounded bg-stone-900 text-white px-4 py-2 text-sm hover:bg-stone-700 justify-self-start">
+              ส่งเข้าคิวตรวจสอบ
+            </button>
+          </form>
+        </details>
       </section>
 
       {!source && hasText && <TypesetDocument text={entry.documentText!.text} />}

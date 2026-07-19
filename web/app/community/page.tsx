@@ -13,6 +13,7 @@ const TYPE_LABELS: Record<string, string> = {
   suggest_entry: "แจ้งกฎหมายลำดับรองที่ขาด",
   suggest_act: "แจ้งกฎหมายแม่บทที่ขาด",
   suggest_source: "เสนอแหล่งอ้างอิงทางการ",
+  suggest_link: "แนบลิงก์ต้นฉบับของฉบับ",
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -39,6 +40,7 @@ function Payload({ payload }: { payload: string | null }) {
     fullName: "ชื่อกฎหมาย",
     note: "หมายเหตุ",
     url: "ลิงก์",
+    checked: "ผลตรวจลิงก์อัตโนมัติ",
     publisher: "หน่วยงานผู้เผยแพร่",
   };
   return (
@@ -48,7 +50,15 @@ function Payload({ payload }: { payload: string | null }) {
         .map(([k, v]) => (
           <div key={k}>
             <dt className="inline font-medium">{labels[k] ?? k}: </dt>
-            <dd className="inline break-all">{v}</dd>
+            <dd className="inline break-all">
+              {/^https?:\/\//.test(String(v)) ? (
+                <a href={String(v)} target="_blank" rel="noopener noreferrer" className="text-seal-700 underline">
+                  {v} ↗
+                </a>
+              ) : (
+                v
+              )}
+            </dd>
           </div>
         ))}
     </dl>
