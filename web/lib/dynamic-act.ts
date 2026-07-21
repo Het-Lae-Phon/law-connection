@@ -238,6 +238,27 @@ export function parseDynamicSections(
   });
 
   if (records.length < 3) return null;
+
+  // OCS head matter arrives as tiny fragments ("พ.ศ." / "๒๕๑๑" / "ให้ไว้" /
+  // "ณ วันที่ ..." each on its own line) — stitch the pairs back together so
+  // the preamble reads like the printed page
+  const stitched: string[] = [];
+  for (const raw of preambleLines) {
+    const line = raw.trim();
+    if (!line) continue;
+    const prev = stitched[stitched.length - 1];
+    const joins =
+      prev !== undefined &&
+      (/(พ\.ศ\.|พุทธศักราช|ให้ไว้|เป็นปีที่|ณ|วันที่|ที่)$/.test(prev) ||
+        /^(ป\.ร\.|ปร\.|ณ\s|ในรัชกาล)/.test(line) ||
+        (/^[๐-๙0-9]+/.test(line) && prev.length <= 30) ||
+        (prev.length <= 30 && /^(ภูมิพล|วชิราลงกรณ|มหาวชิราลงกรณ|อานันท|ปรมินทร|ปกเกล้า)/.test(prev) === false &&
+          /^(ป\.ร\.)$/.test(line)));
+    if (joins) stitched[stitched.length - 1] = `${prev} ${line}`;
+    else if (line !== prev) stitched.push(line); // drop consecutive duplicates
+  }
+  preambleLines.length = 0;
+  preambleLines.push(...stitched);
   const today = new Date().toISOString().slice(0, 10);
   const sections = records
     .map((r) => resolveSection(r, today))

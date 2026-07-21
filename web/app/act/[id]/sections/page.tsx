@@ -373,27 +373,40 @@ export default async function ActSectionsPage({
       <article
         className={`${sarabun.className} rounded-lg border border-stone-200 bg-white px-5 py-10 sm:px-14 sm:py-14 text-[17px] text-stone-900 space-y-6`}
       >
-        {/* the royal preamble — the document opens exactly like the gazette */}
-        {data.preambleLines.length > 0 && (
-          <div className="space-y-3 pb-2">
-            {data.preambleLines.map((line, i) =>
-              i === 0 ? (
-                <div key={i} className="text-center font-bold text-[1.3em] leading-relaxed">
-                  {line}
+        {/* the royal preamble — typeset like the gazette head: the act-name
+            block centered bold with a divider, the พระปรมาภิไธย/ให้ไว้ lines
+            centered, and only real body paragraphs as indented text */}
+        {data.preambleLines.length > 0 &&
+          (() => {
+            const lines = data.preambleLines;
+            // the title block runs until the พ.ศ./พุทธศักราช year line (or the
+            // first non-short line when there is none)
+            let titleEnd = lines.findIndex((l) => /(พ\.ศ\.|พุทธศักราช|ร\.ศ\.|รัตนโกสินทร)[\s๐-๙0-9]*[๐-๙0-9]\s*$/.test(l) && l.length < 60);
+            if (titleEnd < 0 || titleEnd > 4) titleEnd = 0;
+            const title = lines.slice(0, titleEnd + 1);
+            const rest = lines.slice(titleEnd + 1);
+            return (
+              <div className="space-y-3 pb-2">
+                <div className="text-center font-bold text-[1.3em] leading-relaxed">
+                  {title.map((l, i) => (
+                    <div key={i}>{l}</div>
+                  ))}
                   <div className="mx-auto mt-3 w-40 border-b border-stone-800" />
                 </div>
-              ) : /^(ให้ไว้|พระบาทสมเด็จ|สมเด็จพระ|ภูมิพล|วชิราลงกรณ)/.test(line) && line.length < 90 ? (
-                <div key={i} className="text-center leading-loose">
-                  {line}
-                </div>
-              ) : (
-                <p key={i} className="indent-12 leading-loose text-justify">
-                  {line}
-                </p>
-              ),
-            )}
-          </div>
-        )}
+                {rest.map((line, i) =>
+                  line.length < 70 && !/^(โดยที่|อาศัย|ด้วย|เหตุผล|จึง|อนุสนธิ|ตามที่)/.test(line) ? (
+                    <div key={i} className="text-center leading-loose">
+                      {line}
+                    </div>
+                  ) : (
+                    <p key={i} className="indent-12 leading-loose text-justify">
+                      {line}
+                    </p>
+                  ),
+                )}
+              </div>
+            );
+          })()}
         {data.structure.map((n) => renderNode(n, 0))}
         {data.countersignature && (
           <div className="pt-4 text-center leading-loose whitespace-pre-line">
