@@ -347,7 +347,12 @@ export default async function ActSectionsPage({
 
       <SectionNav numbers={sectionNumbers} chapters={chapters} />
 
-      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_260px] lg:gap-6 lg:items-start">
+      <div className="lg:grid lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-6 lg:items-start">
+      {/* สารบัญ — left rail, like the statute book's contents */}
+      <aside className="hidden lg:block sticky top-14 max-h-[calc(100vh-5rem)] overflow-y-auto rounded-lg border border-dashed border-stone-300 bg-white p-3 [scrollbar-width:thin]">
+        <p className="cat-code mb-2">สารบัญ&nbsp;·&nbsp;CONTENTS</p>
+        <SectionToc structure={data.structure} byId={data.byId} has={(id) => byNumber.has(id)} />
+      </aside>
       <div className="space-y-6 min-w-0">
       {data.definitions.length > 0 && (
         <details className="rounded-lg border border-dashed border-stone-300 bg-white p-4">
@@ -403,12 +408,6 @@ export default async function ActSectionsPage({
       </article>
 
       </div>
-
-      {/* สารบัญ — the right-hand rail, like a book's table of contents */}
-      <aside className="hidden lg:block sticky top-14 max-h-[calc(100vh-5rem)] overflow-y-auto rounded-lg border border-dashed border-stone-300 bg-white p-3 [scrollbar-width:thin]">
-        <p className="cat-code mb-2">สารบัญ&nbsp;·&nbsp;CONTENTS</p>
-        <SectionToc structure={data.structure} byId={data.byId} has={(id) => byNumber.has(id)} />
-      </aside>
       </div>
 
       {/* mobile: collapsible สารบัญ above the footer */}

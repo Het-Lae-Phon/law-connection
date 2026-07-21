@@ -28,6 +28,16 @@ const HEADING_KIND: [RegExp, StructuralNode["kind"]][] = [
   [/^(ภาค|ลักษณะ|หมวด|บรรพ)\s*[๐-๙0-9]/, "chapter"],
   [/^ส่วนที่\s*[๐-๙0-9]/, "part"],
 ];
+// structural rank — บรรพ/ภาค hold ลักษณะ hold หมวด hold ส่วนที่, so the TOC
+// nests exactly the way the statute book does
+function headingRank(head: string): number {
+  if (/^(บรรพ|ภาค)\s*[๐-๙0-9]/.test(head)) return 1;
+  if (/^บทเฉพาะกาล/.test(head)) return 1;
+  if (/^ลักษณะ\s*[๐-๙0-9]/.test(head)) return 2;
+  if (/^หมวด\s*[๐-๙0-9]/.test(head)) return 3;
+  if (/^ส่วนที่\s*[๐-๙0-9]/.test(head)) return 4;
+  return 3;
+}
 
 // numbered/lettered subitems — "(๑) ...", "(ก) ..." — are part of the SAME
 // วรรค they follow (อนุมาตรา), never a new วรรค of their own
@@ -94,7 +104,9 @@ export function parseDynamicSections(
   const seenNumbers = new Set<string>();
 
   let current: SectionRecord | null = null;
-  let headingHost: StructuralNode | null = null; // open chapter/part node
+  // open heading stack, outermost (บรรพ/ภาค) first — sections attach to the
+  // deepest open division
+  const headingStack: { node: StructuralNode; rank: number }[] = [];
 
   // route a chunk of text into the current section: (๑)/(ก) chunks become
   // items/subitems of the last วรรค (อนุมาตรา are NOT วรรค); anything else
@@ -132,11 +144,13 @@ export function parseDynamicSections(
 
   const pushRef = (rec: SectionRecord) => {
     const ref: StructuralNode = { id: `${rec.id}#ref`, kind: "section_ref", section: rec.id };
-    (headingHost ? (headingHost.children ??= []) : structure).push(ref);
+    const host = headingStack[headingStack.length - 1]?.node;
+    (host ? (host.children ??= []) : structure).push(ref);
   };
 
   segments.forEach((seg, segIdx) => {
     const isMain = segIdx === mainIdx;
+    headingStack.length = 0;
     for (const b of seg) {
       if (b.kind === "note") {
         noteLines.push(...b.lines);
@@ -158,13 +172,20 @@ export function parseDynamicSections(
         const kind = HEADING_KIND.find(([re]) => re.test(head))?.[1];
         if (kind) {
           current = null;
-          headingHost = {
-            id: `dyn/${opts.actId}/h${structure.length}-${records.length}`,
+          const rank = headingRank(head);
+          // close any divisions at the same or deeper rank, then nest
+          while (headingStack.length && headingStack[headingStack.length - 1].rank >= rank) {
+            headingStack.pop();
+          }
+          const node: StructuralNode = {
+            id: `dyn/${opts.actId}/h${structure.length}-${records.length}-${headingStack.length}`,
             kind,
             title_th: head,
             children: [],
           };
-          structure.push(headingHost);
+          const parent = headingStack[headingStack.length - 1]?.node;
+          (parent ? (parent.children ??= []) : structure).push(node);
+          headingStack.push({ node, rank });
         } else if (current) {
           // schedules/fee tables etc. — keep with the last section
           appendChunk(current, head);
@@ -190,7 +211,7 @@ export function parseDynamicSections(
           number: b.secNo,
           number_th: b.secNo,
           citation_th: `มาตรา ${b.secNo}`,
-          parent: headingHost?.id ?? "",
+          parent: headingStack[headingStack.length - 1]?.node.id ?? "",
           versions: [
             {
               version: 1,
