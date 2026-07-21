@@ -202,6 +202,11 @@ async function ActsResults({
             >
               <span className="font-medium leading-snug flex items-start gap-1.5">
                 {a.fullName}
+                {a.status === "repealed" && (
+                  <span className="ml-2 inline-block rounded bg-seal-100 text-seal-800 text-xs px-1.5 py-0.5 align-middle">
+                    ยกเลิกแล้ว
+                  </span>
+                )}
               </span>
               <span className="shrink-0 text-sm text-stone-500">
                 {a._count.entries.toLocaleString("th-TH")} ฉบับ

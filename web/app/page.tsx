@@ -11,6 +11,7 @@ export default async function Home() {
     prisma.act.count(),
     prisma.gazetteEntry.count({ where: { actId: { not: null }, isPrimary: false } }),
     prisma.act.findMany({
+      where: { status: "active" }, // repealed acts stay findable, not featured
       include: { _count: { select: { entries: true } } },
       orderBy: { entries: { _count: "desc" } },
       take: 12,
