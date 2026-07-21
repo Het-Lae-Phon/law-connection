@@ -4,6 +4,7 @@ import { formatThaiDate } from "@/lib/format";
 import { EntryActions } from "@/app/components/entry-actions";
 import { SearchBox } from "@/app/components/search-box";
 import { searchActsRanked, searchEntries } from "@/lib/search";
+import { Breadcrumbs } from "@/app/components/breadcrumbs";
 
 export const dynamic = "force-dynamic";
 
@@ -27,23 +28,27 @@ const ACT_TYPES = [
 
 const PER_PAGE = 25;
 
-function baseUrl(scope: string, q: string, type: string) {
-  return `/search?scope=${scope}&q=${encodeURIComponent(q)}&type=${encodeURIComponent(type)}`;
+function baseUrl(scope: string, q: string, type: string, fromBE = "", toBE = "") {
+  return `/search?scope=${scope}&q=${encodeURIComponent(q)}&type=${encodeURIComponent(type)}&from=${fromBE}&to=${toBE}`;
 }
 
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; type?: string; page?: string; scope?: string }>;
+  searchParams: Promise<{ q?: string; type?: string; page?: string; scope?: string; from?: string; to?: string }>;
 }) {
   const sp = await searchParams;
   const query = (sp.q ?? "").trim();
   const scope = sp.scope === "acts" ? "acts" : "entries";
   const type = (sp.type ?? "").trim();
   const page = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
+  // ค้นตามช่วงเวลา (ปีราชกิจจาฯ พ.ศ. เริ่ม–สิ้นสุด)
+  const fromBE = /^2[45][0-9]{2}$/.test(sp.from ?? "") ? parseInt(sp.from!, 10) : undefined;
+  const toBE = /^2[45][0-9]{2}$/.test(sp.to ?? "") ? parseInt(sp.to!, 10) : undefined;
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "ค้นหา" }]} backFallback="/" />
       <h1 className="text-2xl font-bold">ค้นหา</h1>
 
       <div className="max-w-2xl">
@@ -64,6 +69,43 @@ export default async function SearchPage({
           กฎหมายลำดับรอง
         </Link>
       </div>
+
+      {scope === "entries" && (
+        <form className="flex flex-wrap items-end gap-2 text-sm">
+          <input type="hidden" name="scope" value="entries" />
+          <input type="hidden" name="q" value={query} />
+          <input type="hidden" name="type" value={type} />
+          <label className="flex items-center gap-1.5">
+            <span className="cat-code">ช่วงเวลา&nbsp;พ.ศ.</span>
+            <input
+              name="from"
+              inputMode="numeric"
+              defaultValue={fromBE ?? ""}
+              placeholder="เริ่ม เช่น 2560"
+              className="w-28 rounded border border-stone-300 bg-white px-2 py-1"
+            />
+          </label>
+          <span className="text-stone-400">–</span>
+          <input
+            name="to"
+            inputMode="numeric"
+            defaultValue={toBE ?? ""}
+            placeholder="ถึง เช่น 2568"
+            className="w-28 rounded border border-stone-300 bg-white px-2 py-1"
+          />
+          <button className="rounded bg-stone-900 px-3 py-1 text-white hover:bg-stone-700">
+            กรองช่วงเวลา
+          </button>
+          {(fromBE || toBE) && (
+            <Link
+              href={baseUrl("entries", query, type)}
+              className="text-seal-700 hover:underline"
+            >
+              ล้างช่วงเวลา
+            </Link>
+          )}
+        </form>
+      )}
 
       {scope === "acts" ? (
         <div className="flex flex-wrap gap-2 text-sm">
@@ -106,7 +148,7 @@ export default async function SearchPage({
       {scope === "acts" ? (
         <ActsResults query={query} actType={type} page={page} />
       ) : (
-        <EntriesResults query={query} instrumentType={type} page={page} />
+        <EntriesResults query={query} instrumentType={type} page={page} fromBE={fromBE} toBE={toBE} />
       )}
     </div>
   );
@@ -198,7 +240,14 @@ async function ActsResults({
               href={`/act/${a.id}`}
               className="flex items-baseline justify-between gap-4 p-4 hover:bg-seal-50"
             >
-              <span className="font-medium leading-snug">{a.fullName}</span>
+              <span className="font-medium leading-snug flex items-start gap-1.5">
+                {a.fullName}
+                {a.status === "repealed" && (
+                  <span className="ml-2 inline-block rounded bg-seal-100 text-seal-800 text-xs px-1.5 py-0.5 align-middle">
+                    ยกเลิกแล้ว
+                  </span>
+                )}
+              </span>
               <span className="shrink-0 text-sm text-stone-500">
                 {a._count.entries.toLocaleString("th-TH")} ฉบับ
               </span>
@@ -215,12 +264,16 @@ async function EntriesResults({
   query,
   instrumentType,
   page,
+  fromBE,
+  toBE,
 }: {
   query: string;
   instrumentType: string;
   page: number;
+  fromBE?: number;
+  toBE?: number;
 }) {
-  if (!query && !instrumentType) {
+  if (!query && !instrumentType && !fromBE && !toBE) {
     return (
       <p className="text-sm text-stone-500">
         พิมพ์คำค้นเพื่อค้นหากฎหมายลำดับรอง หรือ{" "}
@@ -232,11 +285,11 @@ async function EntriesResults({
   }
 
   // relevance-ranked (multi-keyword AND + legal-weight scoring)
-  const result = await searchEntries(query, instrumentType || null);
+  const result = await searchEntries(query, instrumentType || null, { fromBE, toBE });
   const total = result.total;
   const entries = result.entries.slice((page - 1) * PER_PAGE, page * PER_PAGE);
   const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
-  const pageUrl = (p: number) => `${baseUrl("entries", query, instrumentType)}&page=${p}`;
+  const pageUrl = (p: number) => `${baseUrl("entries", query, instrumentType, fromBE ? String(fromBE) : "", toBE ? String(toBE) : "")}&page=${p}`;
 
   return (
     <section className="space-y-3">

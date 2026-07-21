@@ -6,7 +6,7 @@ import { confirmLink, disputeLink, addComment, suggestEntry, suggestSource } fro
 import { EntryActions } from "@/app/components/entry-actions";
 import { CopyCite } from "@/app/components/copy-cite";
 import { VerifyBadge } from "@/app/components/verify-badge";
-import { BackLink } from "@/app/components/back-link";
+import { Breadcrumbs } from "@/app/components/breadcrumbs";
 import { buildCitation, originalSource } from "@/lib/cite";
 import { GROUP_ORDER, GROUP_LABELS } from "@/lib/instrument-labels";
 import { SectionTree } from "@/app/components/section-tree";
@@ -15,14 +15,20 @@ import { CodeTimeline, codeTimelineFor } from "@/app/components/code-timeline";
 import { BookIndex, codeBooksFor } from "@/app/components/book-index";
 import { BasisChips } from "@/app/components/basis-chips";
 import { sdkSlugFor } from "@/lib/thai-law";
+import { SubRegYearRail, type YearBucket } from "@/app/components/subreg-year-rail";
 
-// Thai government domains get an "official" badge on source links
-function isGovDomain(url: string): boolean {
+// Thai government domains get an "official" badge on source links; a few
+// known private legal databases (attach-your-own-link flow) get their own
+function sourceBadge(url: string): { label: string; cls: string } | null {
   try {
     const host = new URL(url).hostname;
-    return host.endsWith(".go.th") || host.endsWith(".or.th");
+    if (host.endsWith(".go.th") || host.endsWith(".or.th"))
+      return { label: "เว็บไซต์หน่วยงานรัฐ", cls: "bg-blue-100 text-blue-800" };
+    if (host.endsWith("fourcorners.law"))
+      return { label: "ฐานข้อมูลกฎหมายเอกชน (ต้องมีบัญชี)", cls: "bg-stone-200 text-stone-700" };
+    return null;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -41,7 +47,7 @@ export default async function ActPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ type?: string; page?: string; view?: string }>;
+  searchParams: Promise<{ type?: string; page?: string; view?: string; year?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
@@ -53,6 +59,16 @@ export default async function ActPage({
   const page = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
   // ?view=tree — word-tree branched by authorising section (มาตรา)
   const treeView = sp.view === "tree";
+  // ?year=<พ.ศ.> — filter the list to sub-regulations issued that year
+  const yearBE = /^25[0-9]{2}$/.test(sp.year ?? "") ? parseInt(sp.year!, 10) : undefined;
+  const yearWhere = yearBE
+    ? {
+        publishedAt: {
+          gte: new Date(Date.UTC(yearBE - 543, 0, 1)),
+          lt: new Date(Date.UTC(yearBE - 543 + 1, 0, 1)),
+        },
+      }
+    : {};
 
   const act = await prisma.act.findUnique({
     where: { id: actId },
@@ -67,10 +83,10 @@ export default async function ActPage({
   });
   if (!act) notFound();
 
-  const [typeCounts, subCount, verifiedCount, primaryEntry, primaries, textEntry] = await Promise.all([
+  const [typeCounts, subCount, verifiedCount, primaryEntry, primaries, textEntry, subRegDates] = await Promise.all([
     prisma.gazetteEntry.groupBy({
       by: ["instrumentType"],
-      where: { actId },
+      where: { actId, ...yearWhere },
       _count: true,
     }),
     prisma.gazetteEntry.count({ where: { actId, isPrimary: false } }),
@@ -99,14 +115,30 @@ export default async function ActPage({
       orderBy: { id: "desc" },
       select: { id: true },
     }),
+    // when each sub-regulation came out — bucketed per year for the rail
+    prisma.gazetteEntry.findMany({
+      where: { actId, isPrimary: false, publishedAt: { not: null } },
+      select: { publishedAt: true },
+    }),
   ]);
+  const yearBuckets: YearBucket[] = (() => {
+    const m = new Map<number, number>();
+    for (const e of subRegDates) {
+      const y = e.publishedAt!.getUTCFullYear() + 543;
+      m.set(y, (m.get(y) ?? 0) + 1);
+    }
+    return [...m.entries()].sort((a, b) => b[0] - a[0]).map(([yearBE, count]) => ({ yearBE, count }));
+  })();
   const countByType = new Map(typeCounts.map((t) => [t.instrumentType ?? "อื่น ๆ", t._count]));
   // structured section texts via the thai-law SDK — chips deep-link into them
-  const sectionsHref = sdkSlugFor(act) ? `/act/${act.id}/sections` : undefined;
+  // structured section texts: curated thai-law bundles OR machine-parsed from
+  // the act's own DocumentText — one reader, chips deep-link into it
+  const sectionsHref =
+    sdkSlugFor(act) || textEntry ? `/act/${act.id}/sections` : undefined;
 
   // full type list regardless of the current filter, so the nav bar always
   // shows every type — only the fetched/rendered groups below narrow to one
-  // when filterType is set.
+  // when filterType is set. (dev UX redesign)
   const allKeys = [
     ...GROUP_ORDER.filter((k) => countByType.has(k)),
     ...[...countByType.keys()].filter((k) => !GROUP_ORDER.includes(k)),
@@ -118,7 +150,7 @@ export default async function ActPage({
   if (!treeView) {
     for (const key of orderedKeys) {
       const list = await prisma.gazetteEntry.findMany({
-        where: { actId, instrumentType: key === "อื่น ๆ" ? null : key },
+        where: { actId, instrumentType: key === "อื่น ๆ" ? null : key, ...yearWhere },
         orderBy: { publishedAt: { sort: "desc", nulls: "last" } },
         take: filterType ? PER_PAGE : PER_GROUP,
         skip: filterType ? (page - 1) * PER_PAGE : 0,
@@ -148,17 +180,14 @@ export default async function ActPage({
 
   return (
     <div className="space-y-8">
-      <nav className="text-sm text-stone-500 flex flex-wrap items-center gap-x-1">
-        <BackLink fallbackHref="/acts" />
-        <span className="mx-1">·</span>
-        <Link href="/acts" className="hover:underline">
-          กฎหมายแม่บท
-        </Link>{" "}
-        / <span className="text-stone-700">{act.shortName}</span>
-      </nav>
+      <Breadcrumbs
+        items={[{ label: "กฎหมายแม่บท", href: "/acts" }, { label: act.shortName }]}
+      />
 
       <header className="space-y-2">
-        <div className="text-sm font-medium text-seal-700">{act.actType}</div>
+        <div className="flex items-center gap-1.5 text-sm font-medium text-seal-700">
+          {act.actType}
+        </div>
         <h1 className="text-2xl font-bold leading-snug">{act.fullName}</h1>
         {act.status === "repealed" && (
           <div className="rounded border border-seal-300 bg-seal-50 px-3 py-2 text-sm text-seal-900">
@@ -182,7 +211,7 @@ export default async function ActPage({
         <div className="flex flex-wrap gap-2 pt-1">
           <CopyCite citation={primaryEntry ? buildCitation(primaryEntry) : act.fullName} />
           {/* one reader: the structured SDK text when covered (preamble +
-              anchored มาตรา/วรรค), else the DocumentText copy at /entry */}
+              anchored มาตรา/วรรค), else the DocumentText copy at /doc */}
           {(sectionsHref || textEntry) && (
             <Link
               href={sectionsHref ?? `/entry/${textEntry!.id}`}
@@ -236,11 +265,12 @@ export default async function ActPage({
                 >
                   {s.title} ↗
                 </a>
-                {isGovDomain(s.url) && (
-                  <span className="rounded bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5">
-                    เว็บไซต์หน่วยงานรัฐ
-                  </span>
-                )}
+                {(() => {
+                  const b = sourceBadge(s.url);
+                  return b ? (
+                    <span className={`rounded text-xs px-1.5 py-0.5 ${b.cls}`}>{b.label}</span>
+                  ) : null;
+                })()}
                 {s.publisher && <span className="text-stone-500">{s.publisher}</span>}
                 <span className="text-xs text-stone-400">
                   เพิ่มโดย {s.contributor || "ไม่ระบุชื่อ"}
@@ -285,7 +315,7 @@ export default async function ActPage({
         </details>
       </section>
 
-      {/* บรรพ index for codes that have one */}
+      {/* geometric บรรพ index (สารบาญ visual language) for codes that have one */}
       {act.actType === "ประมวลกฎหมาย" && codeBooksFor(act.shortName) && (
         <BookIndex shortName={act.shortName} docId={textEntry?.id} />
       )}
@@ -303,6 +333,18 @@ export default async function ActPage({
           />
         );
       })()}
+
+      {/* when the sub-regulations actually came out, year by year */}
+      <SubRegYearRail actId={act.id} buckets={yearBuckets} activeYearBE={yearBE} />
+
+      {yearBE && (
+        <p className="rounded border border-seal-300 bg-seal-50 px-3 py-2 text-sm text-seal-900">
+          แสดงเฉพาะฉบับที่ประกาศในปี <b>พ.ศ. {yearBE}</b>{" "}
+          <Link href={`/act/${act.id}`} className="font-medium underline hover:text-seal-700">
+            ล้างตัวกรอง
+          </Link>
+        </p>
+      )}
 
       {/* view toggle: type-grouped list ↔ word-tree by authorising section */}
       {subCount > 0 && (
@@ -324,7 +366,7 @@ export default async function ActPage({
 
       {treeView && (
         <section className="rounded-lg border border-dashed border-stone-300 bg-white p-5 sm:p-8 overflow-x-auto">
-          <p className="cat-code mb-4">โครงสร้างสายอำนาจตามมาตรา</p>
+          <p className="cat-code mb-4">AUTHORITY&nbsp;TREE&nbsp;·&nbsp;โครงสร้างสายอำนาจตามมาตรา</p>
           <SectionTree actName={act.fullName} entries={treeEntries} sectionsHref={sectionsHref} />
         </section>
       )}
@@ -361,6 +403,7 @@ export default async function ActPage({
         </nav>
       )}
 
+      
       {orderedKeys.filter((k) => groups.has(k)).map((key) => {
         const list = groups.get(key)!;
         const total = countByType.get(key) ?? list.length;

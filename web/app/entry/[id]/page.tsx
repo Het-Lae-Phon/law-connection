@@ -4,10 +4,10 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { formatThaiDate } from "@/lib/format";
 import { buildCitation, originalSource } from "@/lib/cite";
-import { confirmLink, disputeLink } from "@/lib/actions";
+import { confirmLink, disputeLink, suggestLink } from "@/lib/actions";
 import { CopyCite } from "@/app/components/copy-cite";
 import { VerifyBadge } from "@/app/components/verify-badge";
-import { BackLink } from "@/app/components/back-link";
+import { Breadcrumbs } from "@/app/components/breadcrumbs";
 import { TypesetDocument } from "@/app/components/typeset-document";
 import { BasisChips } from "@/app/components/basis-chips";
 import { sdkSlugFor } from "@/lib/thai-law";
@@ -55,16 +55,28 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
 
   const source = originalSource(entry);
   const hasText = !!entry.documentText;
+  // does the PARENT act have a structured-readable primary text?
+  const actHasText = entry.act
+    ? (await prisma.gazetteEntry.count({
+        where: { actId: entry.act.id, isPrimary: true, documentText: { isNot: null } },
+      })) > 0
+    : false;
 
   return (
     <div className="space-y-6">
-      <nav className="text-sm text-stone-500">
-        <BackLink fallbackHref="/entries" />
-      </nav>
+      <Breadcrumbs
+        items={[
+          { label: "กฎหมายลำดับรอง", href: "/entries" },
+          ...(entry.act ? [{ label: entry.act.shortName, href: `/act/${entry.act.id}` }] : []),
+          { label: "รายละเอียดฉบับ" },
+        ]}
+      />
 
       <header className="space-y-3">
         {entry.instrumentType && (
-          <div className="text-sm font-medium text-seal-700">{entry.instrumentType}</div>
+          <div className="flex items-center gap-1.5 text-sm font-medium text-seal-700">
+            {entry.instrumentType}
+          </div>
         )}
         <h1 className="text-xl font-bold leading-snug">
           {entry.title}
@@ -89,10 +101,12 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
             <BasisChips
               legalBasis={entry.legalBasis}
               label="ออกตามความใน"
-              sectionsHref={sdkSlugFor(entry.act) ? `/act/${entry.act.id}/sections` : undefined}
+              sectionsHref={
+                sdkSlugFor(entry.act) || actHasText ? `/act/${entry.act.id}/sections` : undefined
+              }
             />
             <span className="text-stone-500">{entry.legalBasis ? "แห่ง" : "ออกตามความใน"}</span>
-            <Link href={`/act/${entry.act.id}`} className="text-seal-700 hover:underline">
+            <Link href={`/act/${entry.act.id}`} className="inline-flex items-center gap-1.5 text-seal-700 hover:underline">
               {entry.act.fullName}
             </Link>
           </div>
@@ -154,7 +168,10 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
       </header>
 
       {/* the structured reader supersedes this copy for SDK-covered acts */}
-      {entry.isPrimary && entry.act && sdkSlugFor(entry.act) && (
+      {entry.isPrimary &&
+        entry.act &&
+        (sdkSlugFor(entry.act) ||
+          (entry.documentText?.text.match(/(^|\n)\s*มาตรา\s*[๐-๙0-9]/g)?.length ?? 0) >= 3) && (
         <div className="rounded-lg border border-seal-300 bg-seal-50 p-4 text-sm">
           กฎหมายฉบับนี้มี<b>ตัวบทฉบับเต็มแบบโครงสร้างรายมาตรา</b> —
           อ้างอิงเจาะรายมาตรา/รายวรรค พร้อมสถานะการตรวจทาน และอ่านย้อนเวลาได้{" "}
@@ -196,6 +213,38 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
             โดยใช้เลขที่เล่ม/ตอนด้านบน
           </p>
         )}
+        <details className="pt-1">
+          <summary className="cursor-pointer text-sm text-seal-700 hover:underline">
+            + แนบลิงก์ต้นฉบับที่ค้นเจอเอง
+          </summary>
+          <p className="mt-2 text-xs text-stone-500">
+            พบลิงก์ต้นฉบับที่ถูกต้อง (ราชกิจจานุเบกษา หรือเว็บไซต์หน่วยงานทางการ)?
+            แนบไว้ที่นี่ — ระบบจะตรวจว่าลิงก์เปิดได้ แล้วเข้าคิวให้ผู้ตรวจยืนยันก่อนแสดงผล
+          </p>
+          <form action={suggestLink} className="mt-2 grid gap-2 sm:grid-cols-2">
+            <input type="hidden" name="entryId" value={entry.id} />
+            <input
+              name="url"
+              type="url"
+              required
+              placeholder="https://ratchakitcha.soc.go.th/documents/... *"
+              className="rounded border border-stone-300 p-2 text-sm sm:col-span-2"
+            />
+            <input
+              name="note"
+              placeholder="หมายเหตุ เช่น พบจากเว็บไซต์กรม... (ไม่บังคับ)"
+              className="rounded border border-stone-300 p-2 text-sm"
+            />
+            <input
+              name="contributor"
+              placeholder="ชื่อ/สังกัด (ไม่บังคับ)"
+              className="rounded border border-stone-300 p-2 text-sm"
+            />
+            <button className="rounded bg-stone-900 text-white px-4 py-2 text-sm hover:bg-stone-700 justify-self-start">
+              ส่งเข้าคิวตรวจสอบ
+            </button>
+          </form>
+        </details>
       </section>
 
       {!source && hasText && <TypesetDocument text={entry.documentText!.text} />}

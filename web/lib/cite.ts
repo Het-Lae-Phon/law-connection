@@ -49,6 +49,8 @@ export function originalSource(e: {
     if (host.includes("ratchakitcha") || host.includes("soc.go.th"))
       return { label: "ราชกิจจานุเบกษา", url };
     if (host.includes("pdpc")) return { label: "เว็บไซต์ สคส.", url };
+    if (host.endsWith("ocs.go.th")) return { label: "ระบบค้นหากฎหมาย สคก.", url };
+    if (host.endsWith("fourcorners.law")) return { label: "FourCorners", url };
     return { label: "เอกสารต้นทาง", url };
   } catch {
     return null;

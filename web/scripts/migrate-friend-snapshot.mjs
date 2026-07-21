@@ -61,10 +61,21 @@ async function main() {
         shortName: r.shortName,
         year: r.year,
         fullName: r.fullName,
+        status: r.status ?? "active",
+        // repealedById set in a second pass — same-file self-references may
+        // point at rows in later insert batches
       })),
       skipDuplicates: true,
     })
   );
+
+  await loadBatched("act.jsonl", 500, async (rows) => {
+    for (const r of rows) {
+      if (r.repealedById) {
+        await prisma.act.update({ where: { id: r.id }, data: { repealedById: r.repealedById } }).catch(() => {});
+      }
+    }
+  });
 
   await loadBatched("gazette_entry.jsonl", 2000, (rows) =>
     prisma.gazetteEntry.createMany({
@@ -85,6 +96,8 @@ async function main() {
         actId: r.actId,
         linkSource: r.linkSource,
         verifyStatus: r.verifyStatus,
+        legalBasis: r.legalBasis,
+        revokedById: r.revokedById ?? null,
       })),
       skipDuplicates: true,
     })

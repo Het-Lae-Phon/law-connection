@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { actTypeStyle } from "@/lib/act-type-colors";
 import { TypeFilterForm } from "@/app/components/type-filter-form";
+import { Breadcrumbs } from "@/app/components/breadcrumbs";
 
 export const dynamic = "force-dynamic";
 
@@ -24,19 +25,24 @@ const PER_PAGE = 50;
 export default async function ActsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; type?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; type?: string; page?: string; repealed?: string }>;
 }) {
   const sp = await searchParams;
   const query = (sp.q ?? "").trim();
   const actType = (sp.type ?? "").trim();
   const page = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
 
+  // repealed acts stay in the registry (mark, never delete) but are hidden
+  // from the default list — ?repealed=1 shows them, badged
+  const showRepealed = sp.repealed === "1";
+
   const where = {
     ...(query ? { fullName: { contains: query } } : {}),
     ...(actType ? { actType } : {}),
+    ...(showRepealed ? {} : { status: "active" }),
   };
 
-  const [total, acts, typeCounts] = await Promise.all([
+  const [total, acts, typeCounts, repealedCount] = await Promise.all([
     prisma.act.count({ where }),
     prisma.act.findMany({
       where,
@@ -50,6 +56,7 @@ export default async function ActsPage({
       _count: true,
       where: query ? { fullName: { contains: query } } : undefined,
     }),
+    prisma.act.count({ where: { status: "repealed" } }),
   ]);
   const countByType = new Map(typeCounts.map((t) => [t.actType, t._count]));
   const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
@@ -58,6 +65,7 @@ export default async function ActsPage({
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "กฎหมายแม่บท" }]} backFallback="/" />
       <header className="space-y-1">
         <h1 className="text-2xl font-bold font-[family-name:var(--font-serif-thai)]">กฎหมายแม่บททั้งหมด</h1>
         <p className="text-sm text-stone-500">
@@ -80,6 +88,19 @@ export default async function ActsPage({
 
       <p className="text-sm text-stone-500">
         พบ {total.toLocaleString("th-TH")} รายการ เรียงตามจำนวนฉบับที่เชื่อมโยง
+        {repealedCount > 0 && (
+          <>
+            {" · "}
+            <Link
+              href={`/acts?q=${encodeURIComponent(query)}&type=${encodeURIComponent(actType)}${showRepealed ? "" : "&repealed=1"}`}
+              className="text-seal-700 hover:underline"
+            >
+              {showRepealed
+                ? "ซ่อนฉบับที่ยกเลิกแล้ว"
+                : `แสดงฉบับที่ยกเลิกแล้ว (${repealedCount.toLocaleString("th-TH")})`}
+            </Link>
+          </>
+        )}
         {totalPages > 1 && ` · หน้า ${page}/${totalPages}`}
         {" — "}
         มองหากฎกระทรวง ประกาศ หรือระเบียบโดยเฉพาะ?{" "}
@@ -103,7 +124,14 @@ export default async function ActsPage({
               className="grid grid-cols-[auto_1fr_auto] items-center gap-4 rule-dashed py-5 hover:bg-seal-50/40"
             >
               <span className={`size-2.5 shrink-0 rounded-full ${style.dot}`} />
-              <span className="min-w-0 truncate text-lg font-medium">{a.fullName}</span>
+              <span className="min-w-0 truncate text-lg font-medium">
+                {a.fullName}
+                {a.status === "repealed" && (
+                  <span className="ml-2 inline-block rounded bg-seal-100 text-seal-800 text-xs px-1.5 py-0.5 align-middle">
+                    ยกเลิกแล้ว
+                  </span>
+                )}
+              </span>
               <span className="flex shrink-0 items-center gap-3">
                 <span
                   className={`border border-dashed border-stone-300 px-2 py-0.5 font-[family-name:var(--font-plex-mono)] text-[10px] tracking-[0.1em] uppercase ${style.text}`}

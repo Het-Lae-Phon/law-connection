@@ -11,6 +11,7 @@ export default async function Home() {
     prisma.act.count(),
     prisma.gazetteEntry.count({ where: { actId: { not: null }, isPrimary: false } }),
     prisma.act.findMany({
+      where: { status: "active" }, // repealed acts stay findable, not featured
       include: { _count: { select: { entries: true } } },
       orderBy: { entries: { _count: "desc" } },
       take: 12,
@@ -36,11 +37,9 @@ export default async function Home() {
         <p className="font-[family-name:var(--font-plex-mono)] text-[11px] tracking-[0.3em] uppercase text-stone-400 -mt-2">
           Sarabaan · Thai Law Reference Index
         </p>
-        <h1 className="text-2xl sm:text-3xl font-bold font-[family-name:var(--font-serif-thai)]">
-          อ้างอิงกฎหมายให้ถูกฉบับ แล้ว<span className="text-seal-700">ไปที่ต้นฉบับ</span>
-        </h1>
+        <h1 className="sr-only">สารบาญ — ดัชนีอ้างอิงกฎหมายไทย</h1>
         <p className="text-stone-600 max-w-2xl mx-auto">
-          ดัชนีกฎหมายไทยและกฎหมายลำดับรองที่เชื่อมโยงถึงกัน — ค้นหา คัดลอกการอ้างอิงที่ถูกต้อง
+          ดัชนีกฎหมายไทยและกฎหมายลำดับรองที่เชื่อมโยงถึงกัน ค้นหา คัดลอกการอ้างอิงที่ถูกต้อง
           และตามลิงก์ไปยังต้นฉบับในราชกิจจานุเบกษาหรือหน่วยงานผู้ออกกฎหมาย
         </p>
         <div className="flex max-w-xl mx-auto">
@@ -84,7 +83,9 @@ export default async function Home() {
                   {a._count.entries.toLocaleString("th-TH")}&nbsp;ฉบับ
                 </span>
               </div>
-              <div className="font-semibold leading-snug mt-2">{a.fullName}</div>
+              <div className="font-semibold leading-snug mt-2 flex items-start gap-1.5">
+                <span>{a.fullName}</span>
+              </div>
             </Link>
           ))}
         </div>
