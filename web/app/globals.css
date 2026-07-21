@@ -169,3 +169,12 @@ body {
     @apply font-sans;
   }
 }
+
+
+/* reader: the มาตรา/วรรค you navigated to glows like a highlighted passage */
+.law-anchor:target {
+  background: var(--color-seal-50, #faf3f2);
+  outline: 1px dashed var(--color-seal-300, #d3a49e);
+  outline-offset: 6px;
+  border-radius: 2px;
+}

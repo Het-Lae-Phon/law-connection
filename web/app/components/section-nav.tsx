@@ -42,10 +42,12 @@ export function SectionNav({
       return;
     }
     setMissing(false);
-    const el = document.getElementById(`ม-${target}`);
-    if (el) {
-      history.replaceState(null, "", `#ม-${target}`);
-      el.scrollIntoView({ block: "start" });
+    // real hash navigation so :target highlighting engages (and the browser
+    // handles the scroll, respecting scroll-mt on the anchor)
+    if (decodeURIComponent(location.hash) === `#ม-${target}`) {
+      document.getElementById(`ม-${target}`)?.scrollIntoView({ block: "start" });
+    } else {
+      location.hash = `ม-${target}`;
     }
   };
 

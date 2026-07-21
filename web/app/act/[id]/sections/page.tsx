@@ -19,6 +19,7 @@ import {
 } from "@/lib/thai-law";
 import { getDynamicAct } from "@/lib/dynamic-act";
 import { SectionNav, type ChapterLink } from "@/app/components/section-nav";
+import { SectionToc } from "@/app/components/section-toc";
 
 /**
  * ตัวบทฉบับเต็ม (โครงสร้างรายมาตรา) — THE reader for the whole registry:
@@ -57,7 +58,7 @@ function SectionBlock({ r }: { r: ResolvedSection }) {
   const v = r.version;
   const verified = v.source.verification_status === "human_verified";
   return (
-    <div id={`ม-${r.record.number}`} className="scroll-mt-24 space-y-1.5">
+    <div id={`ม-${r.record.number}`} className="law-anchor scroll-mt-24 space-y-1.5">
       <div className="flex flex-wrap items-baseline gap-2">
         <span className="font-heading font-bold text-seal-800">
           มาตรา {arabicToThai(r.record.number)}
@@ -86,7 +87,7 @@ function SectionBlock({ r }: { r: ResolvedSection }) {
       {v.paragraphs.map((p, i) => (
         // วรรค are cited by position, so each carries its ordinal and a stable
         // anchor (ม-<n>-ว-<i>) — pinpoint citation targets, not just sections
-        <div key={p.id} id={`ม-${r.record.number}-ว-${i + 1}`} className="group/wak relative space-y-1 scroll-mt-24">
+        <div key={p.id} id={`ม-${r.record.number}-ว-${i + 1}`} className="law-anchor group/wak relative space-y-1 scroll-mt-24">
           {v.paragraphs.length > 1 && (
             <a
               href={`#ม-${r.record.number}-ว-${i + 1}`}
@@ -346,6 +347,8 @@ export default async function ActSectionsPage({
 
       <SectionNav numbers={sectionNumbers} chapters={chapters} />
 
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_260px] lg:gap-6 lg:items-start">
+      <div className="space-y-6 min-w-0">
       {data.definitions.length > 0 && (
         <details className="rounded-lg border border-dashed border-stone-300 bg-white p-4">
           <summary className="cursor-pointer font-bold text-sm">
@@ -398,6 +401,23 @@ export default async function ActSectionsPage({
           </p>
         )}
       </article>
+
+      </div>
+
+      {/* สารบัญ — the right-hand rail, like a book's table of contents */}
+      <aside className="hidden lg:block sticky top-14 max-h-[calc(100vh-5rem)] overflow-y-auto rounded-lg border border-dashed border-stone-300 bg-white p-3 [scrollbar-width:thin]">
+        <p className="cat-code mb-2">สารบัญ&nbsp;·&nbsp;CONTENTS</p>
+        <SectionToc structure={data.structure} byId={data.byId} has={(id) => byNumber.has(id)} />
+      </aside>
+      </div>
+
+      {/* mobile: collapsible สารบัญ above the footer */}
+      <details className="lg:hidden rounded-lg border border-dashed border-stone-300 bg-white p-3">
+        <summary className="cursor-pointer cat-code">สารบัญ&nbsp;·&nbsp;CONTENTS</summary>
+        <div className="mt-2 max-h-96 overflow-y-auto">
+          <SectionToc structure={data.structure} byId={data.byId} has={(id) => byNumber.has(id)} />
+        </div>
+      </details>
 
       <p className="text-[11px] text-stone-400">
         {data.curated ? (
