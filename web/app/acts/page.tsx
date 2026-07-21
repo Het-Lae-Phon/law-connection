@@ -1,57 +1,166 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
+import { actTypeStyle } from "@/lib/act-type-colors";
+import { TypeFilterForm } from "@/app/components/type-filter-form";
+import { Breadcrumbs } from "@/app/components/breadcrumbs";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "กฎหมายแม่บททั้งหมด — กฎหมายเชื่อมโยง",
+  description: "ทะเบียนพระราชบัญญัติ พระราชกำหนด และประมวลกฎหมายไทยทั้งหมด พร้อมจำนวนกฎหมายลำดับรองที่เชื่อมโยง",
+};
+
+const ACT_TYPES = [
+  "พระราชบัญญัติ",
+  "พระราชกำหนด",
+  "พระราชบัญญัติประกอบรัฐธรรมนูญ",
+  "ประมวลกฎหมาย",
+  "รัฐธรรมนูญ",
+];
+
+const PER_PAGE = 50;
 
 export default async function ActsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; type?: string; page?: string; repealed?: string }>;
 }) {
-  const { q } = await searchParams;
-  const query = (q ?? "").trim();
+  const sp = await searchParams;
+  const query = (sp.q ?? "").trim();
+  const actType = (sp.type ?? "").trim();
+  const page = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
 
-  const acts = await prisma.act.findMany({
-    where: query ? { fullName: { contains: query } } : undefined,
-    include: { _count: { select: { entries: true } } },
-    orderBy: { entries: { _count: "desc" } },
-    take: 300,
-  });
+  // repealed acts stay in the registry (mark, never delete) but are hidden
+  // from the default list — ?repealed=1 shows them, badged
+  const showRepealed = sp.repealed === "1";
+
+  const where = {
+    ...(query ? { fullName: { contains: query } } : {}),
+    ...(actType ? { actType } : {}),
+    ...(showRepealed ? {} : { status: "active" }),
+  };
+
+  const [total, acts, typeCounts, repealedCount] = await Promise.all([
+    prisma.act.count({ where }),
+    prisma.act.findMany({
+      where,
+      include: { _count: { select: { entries: true } } },
+      orderBy: { entries: { _count: "desc" } },
+      skip: (page - 1) * PER_PAGE,
+      take: PER_PAGE,
+    }),
+    prisma.act.groupBy({
+      by: ["actType"],
+      _count: true,
+      where: query ? { fullName: { contains: query } } : undefined,
+    }),
+    prisma.act.count({ where: { status: "repealed" } }),
+  ]);
+  const countByType = new Map(typeCounts.map((t) => [t.actType, t._count]));
+  const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+  const pageUrl = (p: number) =>
+    `/acts?q=${encodeURIComponent(query)}&type=${encodeURIComponent(actType)}&page=${p}`;
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">กฎหมายแม่บททั้งหมด</h1>
-      <form className="flex max-w-xl gap-2">
-        <input
-          type="text"
-          name="q"
-          defaultValue={query}
-          placeholder="กรองตามชื่อกฎหมาย เช่น ภาษี, แรงงาน..."
-          className="flex-1 rounded-lg border border-stone-300 bg-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-seal-500"
-        />
-        <button type="submit" className="rounded-lg bg-stone-900 text-white px-5 py-2 hover:bg-stone-700">
-          กรอง
-        </button>
-      </form>
+      <Breadcrumbs items={[{ label: "กฎหมายแม่บท" }]} backFallback="/" />
+      <header className="space-y-1">
+        <h1 className="text-2xl font-bold font-[family-name:var(--font-serif-thai)]">กฎหมายแม่บททั้งหมด</h1>
+        <p className="text-sm text-stone-500">
+          ทะเบียนนี้สร้างอัตโนมัติจากประกาศในราชกิจจานุเบกษาและการอ้างอิงในกฎหมายลำดับรอง —
+          ไม่ต้องคัดกรองล่วงหน้า
+        </p>
+      </header>
+
+      <TypeFilterForm
+        basePath="/acts"
+        query={query}
+        selectedType={actType}
+        searchPlaceholder="กรองตามชื่อกฎหมาย เช่น ภาษี, แรงงาน..."
+        options={ACT_TYPES.filter((t) => countByType.has(t)).map((t) => ({
+          value: t,
+          count: countByType.get(t)!,
+          dotClass: actTypeStyle(t).dot,
+        }))}
+      />
+
       <p className="text-sm text-stone-500">
-        {acts.length.toLocaleString("th-TH")} รายการ เรียงตามจำนวนฉบับที่เชื่อมโยง
-        (ทะเบียนนี้สร้างอัตโนมัติจากประกาศในราชกิจจานุเบกษาและการอ้างอิงในกฎหมายลำดับรอง)
-      </p>
-      <ul className="divide-y divide-stone-200 rounded-lg border border-stone-200 bg-white">
-        {acts.map((a) => (
-          <li key={a.id}>
+        พบ {total.toLocaleString("th-TH")} รายการ เรียงตามจำนวนฉบับที่เชื่อมโยง
+        {repealedCount > 0 && (
+          <>
+            {" · "}
             <Link
-              href={`/act/${a.id}`}
-              className="flex items-baseline justify-between gap-4 p-4 hover:bg-seal-50"
+              href={`/acts?q=${encodeURIComponent(query)}&type=${encodeURIComponent(actType)}${showRepealed ? "" : "&repealed=1"}`}
+              className="text-seal-700 hover:underline"
             >
-              <span className="font-medium leading-snug">{a.fullName}</span>
-              <span className="shrink-0 text-sm text-stone-500">
-                {a._count.entries.toLocaleString("th-TH")} ฉบับ
+              {showRepealed
+                ? "ซ่อนฉบับที่ยกเลิกแล้ว"
+                : `แสดงฉบับที่ยกเลิกแล้ว (${repealedCount.toLocaleString("th-TH")})`}
+            </Link>
+          </>
+        )}
+        {totalPages > 1 && ` · หน้า ${page}/${totalPages}`}
+        {" — "}
+        มองหากฎกระทรวง ประกาศ หรือระเบียบโดยเฉพาะ?{" "}
+        <Link href={`/entries${query ? `?q=${encodeURIComponent(query)}` : ""}`} className="text-seal-700 hover:underline">
+          ดูทะเบียนกฎหมายลำดับรองที่นี่ →
+        </Link>
+      </p>
+
+      <div>
+        <div className="grid grid-cols-[auto_1fr_auto] gap-4 border-b border-stone-300 pb-2 font-[family-name:var(--font-plex-mono)] text-[10px] tracking-[0.12em] text-stone-400 uppercase">
+          <span>/ ประเภท</span>
+          <span>/ ชื่อกฎหมาย</span>
+          <span>/ ฉบับที่เชื่อมโยง</span>
+        </div>
+        {acts.map((a) => {
+          const style = actTypeStyle(a.actType);
+          return (
+            <Link
+              key={a.id}
+              href={`/act/${a.id}`}
+              className="grid grid-cols-[auto_1fr_auto] items-center gap-4 rule-dashed py-5 hover:bg-seal-50/40"
+            >
+              <span className={`size-2.5 shrink-0 rounded-full ${style.dot}`} />
+              <span className="min-w-0 truncate text-lg font-medium">
+                {a.fullName}
+                {a.status === "repealed" && (
+                  <span className="ml-2 inline-block rounded bg-seal-100 text-seal-800 text-xs px-1.5 py-0.5 align-middle">
+                    ยกเลิกแล้ว
+                  </span>
+                )}
+              </span>
+              <span className="flex shrink-0 items-center gap-3">
+                <span
+                  className={`border border-dashed border-stone-300 px-2 py-0.5 font-[family-name:var(--font-plex-mono)] text-[10px] tracking-[0.1em] uppercase ${style.text}`}
+                >
+                  {a.actType}
+                </span>
+                <span className="text-sm text-stone-500">
+                  {a._count.entries.toLocaleString("th-TH")} ฉบับ
+                </span>
               </span>
             </Link>
-          </li>
-        ))}
-      </ul>
+          );
+        })}
+      </div>
+
+      {totalPages > 1 && (
+        <div className="flex gap-2 justify-center text-sm">
+          {page > 1 && (
+            <Link href={pageUrl(page - 1)} className="rounded border border-stone-300 bg-white px-3 py-1.5 hover:bg-stone-100">
+              ← ก่อนหน้า
+            </Link>
+          )}
+          {page < totalPages && (
+            <Link href={pageUrl(page + 1)} className="rounded border border-stone-300 bg-white px-3 py-1.5 hover:bg-stone-100">
+              ถัดไป →
+            </Link>
+          )}
+        </div>
+      )}
     </div>
   );
 }

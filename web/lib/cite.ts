@@ -14,7 +14,8 @@ export interface CitableEntry {
 export function buildCitation(e: CitableEntry): string {
   const parts = [e.title];
   if (e.volume > 0) {
-    let gaz = `ราชกิจจานุเบกษา เล่ม ${e.volume} ตอนที่ ${e.issue} ${e.category} หน้า ${e.page}`;
+    let gaz = `ราชกิจจานุเบกษา เล่ม ${e.volume} ตอนที่ ${e.issue} ${e.category}`;
+    if (e.page > 0) gaz += ` หน้า ${e.page}`; // some older citations omit the page
     if (e.publishedAt) gaz += ` (${formatThaiDate(e.publishedAt)})`;
     parts.push(gaz);
   } else if (e.publishedAt) {
@@ -48,6 +49,8 @@ export function originalSource(e: {
     if (host.includes("ratchakitcha") || host.includes("soc.go.th"))
       return { label: "ราชกิจจานุเบกษา", url };
     if (host.includes("pdpc")) return { label: "เว็บไซต์ สคส.", url };
+    if (host.endsWith("ocs.go.th")) return { label: "ระบบค้นหากฎหมาย สคก.", url };
+    if (host.endsWith("fourcorners.law")) return { label: "FourCorners", url };
     return { label: "เอกสารต้นทาง", url };
   } catch {
     return null;

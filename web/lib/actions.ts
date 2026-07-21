@@ -31,6 +31,7 @@ export async function confirmLink(formData: FormData) {
     }),
   ]);
   revalidatePath(`/act/${entry.actId}`);
+  revalidatePath(`/entry/${entryId}`);
 }
 
 // ⚠ "link is wrong" — flags immediately, queued for moderator resolution
@@ -54,6 +55,7 @@ export async function disputeLink(formData: FormData) {
     prisma.gazetteEntry.update({ where: { id: entryId }, data: { verifyStatus: "disputed" } }),
   ]);
   if (entry.actId) revalidatePath(`/act/${entry.actId}`);
+  revalidatePath(`/entry/${entryId}`);
   revalidatePath("/community");
 }
 
@@ -116,6 +118,45 @@ export async function suggestSource(formData: FormData) {
     },
   });
   revalidatePath(`/act/${actId}`);
+  revalidatePath("/community");
+}
+
+// a researched original-document link for a specific ฉบับ, attached by the
+// user for human recheck — the URL is probed server-side so the reviewer sees
+// whether it resolves before opening it
+export async function suggestLink(formData: FormData) {
+  const entryId = parseInt(clean(formData.get("entryId")), 10);
+  const url = clean(formData.get("url"), 500);
+  if (isNaN(entryId) || !/^https?:\/\//i.test(url)) return;
+
+  let checked = "unreachable";
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      redirect: "follow",
+      signal: AbortSignal.timeout(8000),
+      headers: { "User-Agent": "Mozilla/5.0 (Sarabaan link check)", Range: "bytes=0-2047" },
+    });
+    const type = res.headers.get("content-type")?.split(";")[0] ?? "";
+    checked = `${res.status}${type ? ` ${type}` : ""}`;
+  } catch {
+    /* keep "unreachable" */
+  }
+
+  await prisma.contribution.create({
+    data: {
+      type: "suggest_link",
+      status: "pending",
+      entryId,
+      payload: JSON.stringify({
+        url,
+        note: clean(formData.get("note"), 300) || undefined,
+        checked,
+      }),
+      contributor: clean(formData.get("contributor"), 120) || null,
+    },
+  });
+  revalidatePath(`/entry/${entryId}`);
   revalidatePath("/community");
 }
 
@@ -201,6 +242,13 @@ export async function moderate(formData: FormData) {
           data: { ...data, pdfUrl: `community:${id}` },
         });
       }
+    } else if (c.type === "suggest_link" && c.entryId && c.payload) {
+      // human-checked original link: attach to the entry and mark it verified
+      const p = JSON.parse(c.payload) as { url: string };
+      await prisma.gazetteEntry.update({
+        where: { id: c.entryId },
+        data: { sourceUrl: p.url, verifyStatus: "verified" },
+      });
     } else if (c.type === "suggest_source" && c.actId && c.payload) {
       const p = JSON.parse(c.payload) as { title: string; url: string; publisher?: string };
       await prisma.source.upsert({

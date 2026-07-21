@@ -1,20 +1,70 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 /* สารบาญ (Sarabaan) design language
    — paper-white field, blind-emboss typography, one metallic label band,
-     catalog precision. Light-only by design (matches the printed edition). */
+     catalog precision. Light-only by design (matches the printed edition);
+     shadcn components below are themed onto these tokens, not their own
+     generic defaults, and get sharp corners (--radius: 0) to match. */
 :root {
+  color-scheme: light;
   --background: #fafaf8; /* paper white */
   --foreground: #1c1c1a; /* ink */
-  color-scheme: light;
+
+  --card: var(--background);
+  --card-foreground: var(--foreground);
+  --popover: var(--background);
+  --popover-foreground: var(--foreground);
+
+  --primary: var(--foreground); /* ink buttons, white text — bg-stone-900 pattern */
+  --primary-foreground: var(--background);
+  --secondary: var(--color-stone-100);
+  --secondary-foreground: var(--color-stone-800);
+  --muted: var(--color-stone-100);
+  --muted-foreground: var(--color-stone-500);
+  --accent: var(--color-seal-50);
+  --accent-foreground: var(--color-seal-800);
+  --destructive: #b3261e;
+
+  --border: var(--color-stone-300);
+  --input: var(--color-stone-300);
+  --ring: var(--color-seal-600);
+  --radius: 0px; /* sharp corners everywhere — no rounded shadcn defaults */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-plex-thai);
+  --font-sans: var(--font-body-thai);
   --font-serif: var(--font-serif-thai);
   --font-mono: var(--font-plex-mono);
+  /* headings: Adobe "Bree Thai Variable" once the kit <link> is added in
+     layout.tsx; falls back to the looped serif until then. */
+  --font-heading: "bree-thai", var(--font-serif-thai), serif;
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: var(--radius);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius);
+  --radius-xl: var(--radius);
+  --radius-2xl: var(--radius);
+  --radius-3xl: var(--radius);
+  --radius-4xl: var(--radius);
 }
 
 /* sealing-wax accent (ตราครั่ง) — the one non-neutral color */
@@ -28,10 +78,25 @@
   --color-seal-900: #571f1b;
 }
 
+/* กฎหมายแม่บท (act type) wayfinding hues — muted, ink/wax-toned so they read
+   as archival index tabs rather than a rainbow, keeping seal as the one loud
+   accent (used here for รัฐธรรมนูญ, the exceptional/highest-authority case). */
+@theme {
+  --color-type-act: #5b6b7a; /* พระราชบัญญัติ — ink-blue, the everyday act */
+  --color-type-decree: #a8823d; /* พระราชกำหนด — aged gold, urgency/emergency */
+  --color-type-organic: #6b5470; /* พระราชบัญญัติประกอบรัฐธรรมนูญ — muted plum */
+  --color-type-code: #5f7a5f; /* ประมวลกฎหมาย — sage, codified body */
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-plex-thai), sans-serif;
+  font-family: var(--font-body-thai), sans-serif;
+}
+
+/* geometric heading treatment — Bree Thai (or the serif fallback) */
+.font-heading {
+  font-family: var(--font-heading);
 }
 
 /* the metallic obi band from the printed edition */
@@ -55,4 +120,61 @@ body {
     0 2px 3px rgba(0, 0, 0, 0.05);
   letter-spacing: 0.02em;
   user-select: none;
+}
+
+/* archival index-card motifs (physical filing-system feel) */
+
+/* a "folder" card: dashed hairline frame + a stacked-paper shadow behind it,
+   as if it's a manila folder holding sheets */
+.folder-card {
+  position: relative;
+  border: 1px dashed var(--color-stone-300, #d6d3d1);
+  background: #fff;
+}
+.folder-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translate(4px, 4px);
+  border: 1px solid var(--color-stone-200, #e7e5e4);
+  background: #fcfcfa;
+  z-index: -1;
+  transition: transform 0.15s ease;
+}
+.folder-card:hover::before {
+  transform: translate(6px, 6px);
+}
+
+/* dashed section rule, like an index divider */
+.rule-dashed {
+  border-top: 1px dashed var(--color-stone-300, #d6d3d1);
+}
+
+/* small mono catalog code chip (reference-number look) */
+.cat-code {
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--color-stone-400, #a8a29e);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+
+/* reader: the มาตรา/วรรค you navigated to glows like a highlighted passage */
+.law-anchor:target {
+  background: var(--color-seal-50, #faf3f2);
+  outline: 1px dashed var(--color-seal-300, #d3a49e);
+  outline-offset: 6px;
+  border-radius: 2px;
 }

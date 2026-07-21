@@ -22,10 +22,12 @@ interface EntryHit {
 export function SearchBox({
   initialQuery = "",
   type = "",
+  scope = "",
   autoFocus = false,
 }: {
   initialQuery?: string;
   type?: string;
+  scope?: string;
   autoFocus?: boolean;
 }) {
   const router = useRouter();
@@ -94,6 +96,7 @@ export function SearchBox({
           )}
         </div>
         {type && <input type="hidden" name="type" value={type} />}
+        {scope && <input type="hidden" name="scope" value={scope} />}
         <button type="submit" className="rounded-lg bg-stone-900 text-white px-6 py-2.5 hover:bg-stone-700">
           ค้นหา
         </button>

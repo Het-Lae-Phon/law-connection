@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
       id: e.id,
       title: e.title,
       // best destination for this suggestion
-      url: e.actId ? `/act/${e.actId}` : e.origin === "krisdika" ? `/doc/${e.id}` : `/search?q=${encodeURIComponent(e.title.slice(0, 80))}`,
+      url: e.actId ? `/act/${e.actId}` : e.origin === "krisdika" ? `/entry/${e.id}` : `/search?q=${encodeURIComponent(e.title.slice(0, 80))}`,
       actName: e.act?.shortName ?? null,
     })),
   });

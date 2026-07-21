@@ -11,6 +11,7 @@ export default async function Home() {
     prisma.act.count(),
     prisma.gazetteEntry.count({ where: { actId: { not: null }, isPrimary: false } }),
     prisma.act.findMany({
+      where: { status: "active" }, // repealed acts stay findable, not featured
       include: { _count: { select: { entries: true } } },
       orderBy: { entries: { _count: "desc" } },
       take: 12,
@@ -36,17 +37,15 @@ export default async function Home() {
         <p className="font-[family-name:var(--font-plex-mono)] text-[11px] tracking-[0.3em] uppercase text-stone-400 -mt-2">
           Sarabaan · Thai Law Reference Index
         </p>
-        <h1 className="text-2xl sm:text-3xl font-bold font-[family-name:var(--font-serif-thai)]">
-          อ้างอิงกฎหมายให้ถูกฉบับ แล้ว<span className="text-seal-700">ไปที่ต้นฉบับ</span>
-        </h1>
+        <h1 className="sr-only">สารบาญ — ดัชนีอ้างอิงกฎหมายไทย</h1>
         <p className="text-stone-600 max-w-2xl mx-auto">
-          ดัชนีกฎหมายไทยและกฎหมายลำดับรองที่เชื่อมโยงถึงกัน — ค้นหา คัดลอกการอ้างอิงที่ถูกต้อง
+          ดัชนีกฎหมายไทยและกฎหมายลำดับรองที่เชื่อมโยงถึงกัน ค้นหา คัดลอกการอ้างอิงที่ถูกต้อง
           และตามลิงก์ไปยังต้นฉบับในราชกิจจานุเบกษาหรือหน่วยงานผู้ออกกฎหมาย
         </p>
         <div className="flex max-w-xl mx-auto">
           <SearchBox />
         </div>
-        <div className="mx-auto max-w-xl grid grid-cols-3 border-y border-stone-200 divide-x divide-stone-200 text-center">
+        <div className="mx-auto max-w-xl grid grid-cols-3 border-y border-dashed border-stone-300 divide-x divide-dashed divide-stone-300 text-center">
           {[
             [entryCount, "ประกาศราชกิจจาฯ"],
             [actCount, "กฎหมายแม่บท"],
@@ -69,16 +68,23 @@ export default async function Home() {
             ดูทั้งหมด →
           </Link>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {topActs.map((a) => (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {topActs.map((a, i) => (
             <Link
               key={a.id}
               href={`/act/${a.id}`}
-              className="rounded-lg border border-stone-200 bg-white p-4 hover:border-seal-300 hover:shadow-sm transition"
+              className="folder-card p-4 hover:border-seal-300 transition block"
             >
-              <div className="font-semibold leading-snug">{a.fullName}</div>
-              <div className="text-sm text-stone-500 mt-1">
-                {a._count.entries.toLocaleString("th-TH")} ฉบับที่เกี่ยวข้อง
+              <div className="flex items-center justify-between">
+                <span className="cat-code">
+                  ACT&nbsp;·&nbsp;{String(i + 1).padStart(3, "0")}
+                </span>
+                <span className="cat-code">
+                  {a._count.entries.toLocaleString("th-TH")}&nbsp;ฉบับ
+                </span>
+              </div>
+              <div className="font-semibold leading-snug mt-2 flex items-start gap-1.5">
+                <span>{a.fullName}</span>
               </div>
             </Link>
           ))}
@@ -87,21 +93,20 @@ export default async function Home() {
 
       <section>
         <h2 className="text-xl font-bold mb-4">กฎหมายประกาศใหม่ล่าสุด (ประเภท ก)</h2>
-        <ul className="divide-y divide-stone-200 rounded-lg border border-stone-200 bg-white">
+        <ul className="rounded-lg border border-dashed border-stone-300 bg-white [&>li:not(:first-child)]:rule-dashed">
           {recentLaws.map((e) => (
             <li key={e.id} className="p-4 space-y-1">
-              <a
-                href={e.pdfUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                href={`/entry/${e.id}`}
                 className="font-medium hover:text-seal-700 leading-snug block"
               >
                 {e.title}
-              </a>
+              </Link>
               <div className="text-sm text-stone-500 flex flex-wrap gap-x-3">
                 <span>{formatThaiDate(e.publishedAt)}</span>
                 <span>
-                  เล่ม {e.volume} ตอนที่ {e.issue} หน้า {e.page}
+                  เล่ม {e.volume} ตอนที่ {e.issue}
+                  {e.page > 0 ? ` หน้า ${e.page}` : ""}
                 </span>
                 {e.act && (
                   <Link href={`/act/${e.act.id}`} className="text-seal-700 hover:underline">

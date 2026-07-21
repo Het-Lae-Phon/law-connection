@@ -5,83 +5,39 @@ import { formatThaiDate } from "@/lib/format";
 import { confirmLink, disputeLink, addComment, suggestEntry, suggestSource } from "@/lib/actions";
 import { EntryActions } from "@/app/components/entry-actions";
 import { CopyCite } from "@/app/components/copy-cite";
+import { VerifyBadge } from "@/app/components/verify-badge";
+import { Breadcrumbs } from "@/app/components/breadcrumbs";
 import { buildCitation, originalSource } from "@/lib/cite";
+import { GROUP_ORDER, GROUP_LABELS } from "@/lib/instrument-labels";
+import { SectionTree } from "@/app/components/section-tree";
+import { VersionTimeline } from "@/app/components/version-timeline";
+import { CodeTimeline, codeTimelineFor } from "@/app/components/code-timeline";
+import { BookIndex, codeBooksFor } from "@/app/components/book-index";
+import { BasisChips } from "@/app/components/basis-chips";
+import { sdkSlugFor } from "@/lib/thai-law";
+import { SubRegYearRail, type YearBucket } from "@/app/components/subreg-year-rail";
 
-// Thai government domains get an "official" badge on source links
-function isGovDomain(url: string): boolean {
+// Thai government domains get an "official" badge on source links; a few
+// known private legal databases (attach-your-own-link flow) get their own
+function sourceBadge(url: string): { label: string; cls: string } | null {
   try {
     const host = new URL(url).hostname;
-    return host.endsWith(".go.th") || host.endsWith(".or.th");
+    if (host.endsWith(".go.th") || host.endsWith(".or.th"))
+      return { label: "เว็บไซต์หน่วยงานรัฐ", cls: "bg-blue-100 text-blue-800" };
+    if (host.endsWith("fourcorners.law"))
+      return { label: "ฐานข้อมูลกฎหมายเอกชน (ต้องมีบัญชี)", cls: "bg-stone-200 text-stone-700" };
+    return null;
   } catch {
-    return false;
+    return null;
   }
 }
 
 export const dynamic = "force-dynamic";
 
-const GROUP_ORDER = [
-  "พระราชบัญญัติ",
-  "พระราชบัญญัติประกอบรัฐธรรมนูญ",
-  "พระราชกำหนด",
-  "พระราชกฤษฎีกา",
-  "กฎกระทรวง",
-  "กฎ",
-  "ประกาศ",
-  "ระเบียบ",
-  "ข้อบังคับ",
-  "ข้อกำหนด",
-  "คำสั่ง",
-];
-
-const GROUP_LABELS: Record<string, string> = {
-  "พระราชบัญญัติ": "พระราชบัญญัติ / ฉบับแก้ไขเพิ่มเติม",
-  "พระราชบัญญัติประกอบรัฐธรรมนูญ": "พระราชบัญญัติประกอบรัฐธรรมนูญ",
-  "พระราชกำหนด": "พระราชกำหนด",
-  "พระราชกฤษฎีกา": "พระราชกฤษฎีกา",
-  "กฎกระทรวง": "กฎกระทรวง",
-  "กฎ": "กฎ (ก.พ. / ก.ตร. / อื่น ๆ)",
-  "ประกาศ": "ประกาศ",
-  "ระเบียบ": "ระเบียบ",
-  "ข้อบังคับ": "ข้อบังคับ",
-  "ข้อกำหนด": "ข้อกำหนด",
-  "คำสั่ง": "คำสั่ง",
-};
-
 const ORIGIN_LABELS: Record<string, string> = {
   krisdika: "ห้องสมุดกฎหมาย สำนักงานคณะกรรมการกฤษฎีกา",
   pdpc: "เว็บไซต์ สคส. (PDPC)",
 };
-
-const SOURCE_LABELS: Record<string, string> = {
-  pdf: "จากเนื้อหา PDF",
-  title: "จากชื่อเรื่อง",
-  text: "จากเนื้อหากฎหมาย",
-  regulator: "จากเว็บไซต์หน่วยงานกำกับดูแล",
-};
-
-function VerifyBadge({ status, source }: { status: string; source: string | null }) {
-  if (status === "verified")
-    return (
-      <span className="inline-block rounded bg-green-100 text-green-800 text-xs px-1.5 py-0.5">
-        ✓ ยืนยันโดยชุมชนแล้ว
-      </span>
-    );
-  if (status === "disputed")
-    return (
-      <span className="inline-block rounded bg-red-100 text-red-800 text-xs px-1.5 py-0.5">
-        ⚠ มีข้อโต้แย้ง — รอตรวจสอบ
-      </span>
-    );
-  const how = (source && SOURCE_LABELS[source]) || "";
-  return (
-    <span
-      className="inline-block rounded bg-stone-100 text-stone-600 text-xs px-1.5 py-0.5"
-      title="สร้างโดยระบบ ยังไม่ได้รับการยืนยันโดยผู้เชี่ยวชาญ"
-    >
-      ⚙ เชื่อมโยงอัตโนมัติ{how && ` (${how})`}
-    </span>
-  );
-}
 
 const PER_GROUP = 25;
 const PER_PAGE = 100;
@@ -91,7 +47,7 @@ export default async function ActPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ type?: string; page?: string }>;
+  searchParams: Promise<{ type?: string; page?: string; view?: string; year?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
@@ -101,10 +57,23 @@ export default async function ActPage({
   // single-group drilldown view (?type=ประกาศ) — paginated
   const filterType = (sp.type ?? "").trim() || null;
   const page = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
+  // ?view=tree — word-tree branched by authorising section (มาตรา)
+  const treeView = sp.view === "tree";
+  // ?year=<พ.ศ.> — filter the list to sub-regulations issued that year
+  const yearBE = /^25[0-9]{2}$/.test(sp.year ?? "") ? parseInt(sp.year!, 10) : undefined;
+  const yearWhere = yearBE
+    ? {
+        publishedAt: {
+          gte: new Date(Date.UTC(yearBE - 543, 0, 1)),
+          lt: new Date(Date.UTC(yearBE - 543 + 1, 0, 1)),
+        },
+      }
+    : {};
 
   const act = await prisma.act.findUnique({
     where: { id: actId },
     include: {
+      repealedBy: { select: { id: true, fullName: true } },
       contributions: {
         where: { type: "comment", status: { not: "rejected" } },
         orderBy: { createdAt: "desc" },
@@ -114,10 +83,10 @@ export default async function ActPage({
   });
   if (!act) notFound();
 
-  const [typeCounts, subCount, verifiedCount, primaryEntry] = await Promise.all([
+  const [typeCounts, subCount, verifiedCount, primaryEntry, primaries, textEntry, subRegDates] = await Promise.all([
     prisma.gazetteEntry.groupBy({
       by: ["instrumentType"],
-      where: { actId },
+      where: { actId, ...yearWhere },
       _count: true,
     }),
     prisma.gazetteEntry.count({ where: { actId, isPrimary: false } }),
@@ -126,44 +95,114 @@ export default async function ActPage({
       where: { actId, isPrimary: true, isAmendment: false, volume: { gt: 0 } },
       orderBy: { publishedAt: "asc" },
     }),
+    prisma.gazetteEntry.findMany({
+      where: { actId, isPrimary: true },
+      orderBy: { publishedAt: { sort: "asc", nulls: "last" } },
+      select: {
+        id: true,
+        title: true,
+        publishedAt: true,
+        volume: true,
+        issue: true,
+        category: true,
+        page: true,
+        isAmendment: true,
+      },
+    }),
+    // full text readable on-site (e.g. ประมวลกฎหมาย imported from OCS)
+    prisma.gazetteEntry.findFirst({
+      where: { actId, isPrimary: true, documentText: { isNot: null } },
+      orderBy: { id: "desc" },
+      select: { id: true },
+    }),
+    // when each sub-regulation came out — bucketed per year for the rail
+    prisma.gazetteEntry.findMany({
+      where: { actId, isPrimary: false, publishedAt: { not: null } },
+      select: { publishedAt: true },
+    }),
   ]);
+  const yearBuckets: YearBucket[] = (() => {
+    const m = new Map<number, number>();
+    for (const e of subRegDates) {
+      const y = e.publishedAt!.getUTCFullYear() + 543;
+      m.set(y, (m.get(y) ?? 0) + 1);
+    }
+    return [...m.entries()].sort((a, b) => b[0] - a[0]).map(([yearBE, count]) => ({ yearBE, count }));
+  })();
   const countByType = new Map(typeCounts.map((t) => [t.instrumentType ?? "อื่น ๆ", t._count]));
+  // structured section texts via the thai-law SDK — chips deep-link into them
+  // structured section texts: curated thai-law bundles OR machine-parsed from
+  // the act's own DocumentText — one reader, chips deep-link into it
+  const sectionsHref =
+    sdkSlugFor(act) || textEntry ? `/act/${act.id}/sections` : undefined;
 
-  const orderedKeys = filterType
-    ? [filterType]
-    : [
-        ...GROUP_ORDER.filter((k) => countByType.has(k)),
-        ...[...countByType.keys()].filter((k) => !GROUP_ORDER.includes(k)),
-      ];
+  // full type list regardless of the current filter, so the nav bar always
+  // shows every type — only the fetched/rendered groups below narrow to one
+  // when filterType is set. (dev UX redesign)
+  const allKeys = [
+    ...GROUP_ORDER.filter((k) => countByType.has(k)),
+    ...[...countByType.keys()].filter((k) => !GROUP_ORDER.includes(k)),
+  ];
+  const orderedKeys = filterType ? [filterType] : allKeys;
 
   // fetch entries per group (limited), or one paginated group in drilldown mode
   const groups = new Map<string, Awaited<ReturnType<typeof prisma.gazetteEntry.findMany>>>();
-  for (const key of orderedKeys) {
-    const list = await prisma.gazetteEntry.findMany({
-      where: { actId, instrumentType: key === "อื่น ๆ" ? null : key },
-      orderBy: { publishedAt: { sort: "desc", nulls: "last" } },
-      take: filterType ? PER_PAGE : PER_GROUP,
-      skip: filterType ? (page - 1) * PER_PAGE : 0,
-    });
-    if (list.length) groups.set(key, list);
+  if (!treeView) {
+    for (const key of orderedKeys) {
+      const list = await prisma.gazetteEntry.findMany({
+        where: { actId, instrumentType: key === "อื่น ๆ" ? null : key, ...yearWhere },
+        orderBy: { publishedAt: { sort: "desc", nulls: "last" } },
+        take: filterType ? PER_PAGE : PER_GROUP,
+        skip: filterType ? (page - 1) * PER_PAGE : 0,
+      });
+      if (list.length) groups.set(key, list);
+    }
   }
+
+  // tree view: all non-primary entries, branched by section in the component
+  const treeEntries = treeView
+    ? await prisma.gazetteEntry.findMany({
+        where: { actId, isPrimary: false },
+        orderBy: { publishedAt: { sort: "desc", nulls: "last" } },
+        select: {
+          id: true,
+          title: true,
+          instrumentType: true,
+          legalBasis: true,
+          publishedAt: true,
+          volume: true,
+          issue: true,
+          category: true,
+          page: true,
+        },
+      })
+    : [];
 
   return (
     <div className="space-y-8">
-      <nav className="text-sm text-stone-500">
-        <Link href="/" className="hover:underline">
-          หน้าแรก
-        </Link>{" "}
-        /{" "}
-        <Link href="/acts" className="hover:underline">
-          กฎหมายแม่บท
-        </Link>{" "}
-        / <span className="text-stone-700">{act.shortName}</span>
-      </nav>
+      <Breadcrumbs
+        items={[{ label: "กฎหมายแม่บท", href: "/acts" }, { label: act.shortName }]}
+      />
 
       <header className="space-y-2">
-        <div className="text-sm font-medium text-seal-700">{act.actType}</div>
+        <div className="flex items-center gap-1.5 text-sm font-medium text-seal-700">
+          {act.actType}
+        </div>
         <h1 className="text-2xl font-bold leading-snug">{act.fullName}</h1>
+        {act.status === "repealed" && (
+          <div className="rounded border border-seal-300 bg-seal-50 px-3 py-2 text-sm text-seal-900">
+            <b>ยกเลิกแล้ว</b>
+            {act.repealedBy && (
+              <>
+                {" — โดย "}
+                <Link href={`/act/${act.repealedBy.id}`} className="font-medium underline hover:text-seal-700">
+                  {act.repealedBy.fullName}
+                </Link>
+              </>
+            )}
+            {" · ข้อมูลคงไว้เพื่อการอ้างอิงย้อนหลัง"}
+          </div>
+        )}
         <p className="text-stone-500 text-sm">
           กฎหมายลำดับรองและฉบับที่เกี่ยวข้องในระบบ {subCount.toLocaleString("th-TH")} ฉบับ
           {verifiedCount > 0 && ` · ยืนยันโดยชุมชนแล้ว ${verifiedCount.toLocaleString("th-TH")} ฉบับ`}{" "}
@@ -171,6 +210,16 @@ export default async function ActPage({
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
           <CopyCite citation={primaryEntry ? buildCitation(primaryEntry) : act.fullName} />
+          {/* one reader: the structured SDK text when covered (preamble +
+              anchored มาตรา/วรรค), else the DocumentText copy at /doc */}
+          {(sectionsHref || textEntry) && (
+            <Link
+              href={sectionsHref ?? `/entry/${textEntry!.id}`}
+              className="rounded bg-seal-700 text-white px-3 py-1.5 text-sm hover:bg-seal-800"
+            >
+              อ่านตัวบทฉบับเต็ม
+            </Link>
+          )}
           {primaryEntry &&
             (() => {
               const source = originalSource(primaryEntry);
@@ -216,11 +265,12 @@ export default async function ActPage({
                 >
                   {s.title} ↗
                 </a>
-                {isGovDomain(s.url) && (
-                  <span className="rounded bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5">
-                    เว็บไซต์หน่วยงานรัฐ
-                  </span>
-                )}
+                {(() => {
+                  const b = sourceBadge(s.url);
+                  return b ? (
+                    <span className={`rounded text-xs px-1.5 py-0.5 ${b.cls}`}>{b.label}</span>
+                  ) : null;
+                })()}
                 {s.publisher && <span className="text-stone-500">{s.publisher}</span>}
                 <span className="text-xs text-stone-400">
                   เพิ่มโดย {s.contributor || "ไม่ระบุชื่อ"}
@@ -265,26 +315,101 @@ export default async function ActPage({
         </details>
       </section>
 
-      {groups.size === 0 && (
+      {/* geometric บรรพ index (สารบาญ visual language) for codes that have one */}
+      {act.actType === "ประมวลกฎหมาย" && codeBooksFor(act.shortName) && (
+        <BookIndex shortName={act.shortName} docId={textEntry?.id} />
+      )}
+
+      {/* codes get the official OCS amendment history; other acts use the
+          timeline derived from the gazette editions we hold */}
+      {(() => {
+        const codeTl = act.actType === "ประมวลกฎหมาย" ? codeTimelineFor(act.shortName) : null;
+        return codeTl ? (
+          <CodeTimeline data={codeTl} />
+        ) : (
+          <VersionTimeline
+            primaries={primaries}
+            repealedBy={act.status === "repealed" ? act.repealedBy : null}
+          />
+        );
+      })()}
+
+      {/* when the sub-regulations actually came out, year by year */}
+      <SubRegYearRail actId={act.id} buckets={yearBuckets} activeYearBE={yearBE} />
+
+      {yearBE && (
+        <p className="rounded border border-seal-300 bg-seal-50 px-3 py-2 text-sm text-seal-900">
+          แสดงเฉพาะฉบับที่ประกาศในปี <b>พ.ศ. {yearBE}</b>{" "}
+          <Link href={`/act/${act.id}`} className="font-medium underline hover:text-seal-700">
+            ล้างตัวกรอง
+          </Link>
+        </p>
+      )}
+
+      {/* view toggle: type-grouped list ↔ word-tree by authorising section */}
+      {subCount > 0 && (
+        <div className="inline-flex rounded-lg border border-stone-300 bg-white p-1 text-sm">
+          <Link
+            href={`/act/${act.id}`}
+            className={`rounded px-4 py-1.5 ${!treeView ? "bg-stone-900 text-white" : "text-stone-600 hover:bg-stone-100"}`}
+          >
+            รายการตามประเภท
+          </Link>
+          <Link
+            href={`/act/${act.id}?view=tree`}
+            className={`rounded px-4 py-1.5 ${treeView ? "bg-stone-900 text-white" : "text-stone-600 hover:bg-stone-100"}`}
+          >
+            ต้นไม้ตามมาตรา
+          </Link>
+        </div>
+      )}
+
+      {treeView && (
+        <section className="rounded-lg border border-dashed border-stone-300 bg-white p-5 sm:p-8 overflow-x-auto">
+          <p className="cat-code mb-4">AUTHORITY&nbsp;TREE&nbsp;·&nbsp;โครงสร้างสายอำนาจตามมาตรา</p>
+          <SectionTree actName={act.fullName} entries={treeEntries} sectionsHref={sectionsHref} />
+        </section>
+      )}
+
+      {!treeView && groups.size === 0 && (
         <p className="text-stone-500">
           ยังไม่มีประกาศที่เชื่อมโยงกับกฎหมายฉบับนี้ในช่วงข้อมูลที่มี
         </p>
       )}
 
-      {filterType && (
-        <p className="text-sm">
-          <Link href={`/act/${act.id}`} className="text-seal-700 hover:underline">
-            ← กลับไปหน้ารวมทุกประเภท
-          </Link>
-        </p>
+      {!treeView && allKeys.length > 1 && (
+        <nav className="sticky top-0 z-10 -mx-4 border-b border-stone-200 bg-stone-50/95 px-4 py-2 backdrop-blur">
+          <ul className="flex flex-wrap gap-2 text-sm">
+            {allKeys.map((key) => {
+              const selected = filterType === key;
+              return (
+                <li key={key}>
+                  <Link
+                    href={selected ? `/act/${act.id}` : `/act/${act.id}?type=${encodeURIComponent(key)}`}
+                    className={
+                      selected
+                        ? "inline-flex items-center gap-1 rounded-full border border-seal-500 bg-seal-50 px-3 py-1 text-seal-800"
+                        : "inline-block rounded-full border border-stone-300 bg-white px-3 py-1 text-stone-700 hover:border-seal-300 hover:text-seal-800"
+                    }
+                  >
+                    {GROUP_LABELS[key] ?? key}{" "}
+                    <span className="text-stone-400">({(countByType.get(key) ?? 0).toLocaleString("th-TH")})</span>
+                    {selected && <span className="ml-0.5">✕</span>}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
       )}
 
+      
       {orderedKeys.filter((k) => groups.has(k)).map((key) => {
         const list = groups.get(key)!;
         const total = countByType.get(key) ?? list.length;
         const shownAll = filterType ? false : total <= PER_GROUP;
         return (
-          <section key={key}>
+          <section key={key} id={`group-${key}`} className="scroll-mt-16">
             <h2 className="text-lg font-bold mb-3 flex items-baseline gap-2">
               {GROUP_LABELS[key] ?? key}
               <span className="text-sm font-normal text-stone-400">
@@ -307,7 +432,9 @@ export default async function ActPage({
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-1.5 min-w-0">
                       <div className="font-medium leading-snug">
-                        {e.title}
+                        <Link href={`/entry/${e.id}`} className="hover:text-seal-700 hover:underline">
+                          {e.title}
+                        </Link>
                         {e.isAmendment && (
                           <span className="ml-2 inline-block rounded bg-seal-100 text-seal-800 text-xs px-1.5 py-0.5 align-middle">
                             ฉบับแก้ไข
@@ -316,49 +443,61 @@ export default async function ActPage({
                       </div>
                       <div className="text-sm text-stone-500">
                         {formatThaiDate(e.publishedAt)}
-                        {e.volume > 0 && ` · เล่ม ${e.volume} ตอนที่ ${e.issue} ${e.category} หน้า ${e.page}`}
+                        {e.volume > 0 && ` · เล่ม ${e.volume} ตอนที่ ${e.issue} ${e.category}${e.page > 0 ? ` หน้า ${e.page}` : ""}`}
                         {ORIGIN_LABELS[e.origin] && ` · ${ORIGIN_LABELS[e.origin]}`}
                       </div>
+                      {e.legalBasis && (
+                        <div>
+                          <BasisChips legalBasis={e.legalBasis} sectionsHref={sectionsHref} />
+                        </div>
+                      )}
                       <div className="flex flex-wrap items-center gap-2">
                         <VerifyBadge status={e.verifyStatus} source={e.linkSource} />
-                        {e.verifyStatus !== "verified" && (
-                          <form action={confirmLink}>
-                            <input type="hidden" name="entryId" value={e.id} />
-                            <button className="text-xs text-green-700 hover:underline" title="ยืนยันว่าการเชื่อมโยงนี้ถูกต้อง">
-                              ✓ ยืนยันว่าถูกต้อง
-                            </button>
-                          </form>
-                        )}
                         <details className="text-xs">
-                          <summary className="cursor-pointer text-red-700 hover:underline list-none">
-                            ⚠ แจ้งว่าไม่ถูกต้อง
+                          <summary className="cursor-pointer text-stone-400 hover:text-stone-600 list-none">
+                            ตรวจสอบความถูกต้อง
                           </summary>
-                          <form
-                            action={disputeLink}
-                            className="mt-2 space-y-2 rounded border border-red-200 bg-red-50 p-3 w-72"
-                          >
-                            <input type="hidden" name="entryId" value={e.id} />
-                            <textarea
-                              name="reason"
-                              required
-                              placeholder="เหตุผล เช่น ออกตามกฎหมายฉบับอื่น..."
-                              className="w-full rounded border border-stone-300 p-2 text-sm"
-                              rows={2}
-                            />
-                            <input
-                              name="correctAct"
-                              placeholder="กฎหมายแม่บทที่ถูกต้อง (ถ้าทราบ)"
-                              className="w-full rounded border border-stone-300 p-2 text-sm"
-                            />
-                            <input
-                              name="contributor"
-                              placeholder="ชื่อ/สังกัด (ไม่บังคับ)"
-                              className="w-full rounded border border-stone-300 p-2 text-sm"
-                            />
-                            <button className="rounded bg-red-700 text-white px-3 py-1.5">
-                              ส่งข้อโต้แย้ง
-                            </button>
-                          </form>
+                          <div className="mt-2 flex flex-wrap items-start gap-3">
+                            {e.verifyStatus !== "verified" && (
+                              <form action={confirmLink}>
+                                <input type="hidden" name="entryId" value={e.id} />
+                                <button className="text-xs text-green-700 hover:underline" title="ยืนยันว่าการเชื่อมโยงนี้ถูกต้อง">
+                                  ✓ ยืนยันว่าถูกต้อง
+                                </button>
+                              </form>
+                            )}
+                            <details className="text-xs">
+                              <summary className="cursor-pointer text-red-700 hover:underline list-none">
+                                ⚠ แจ้งว่าไม่ถูกต้อง
+                              </summary>
+                              <form
+                                action={disputeLink}
+                                className="mt-2 space-y-2 rounded border border-red-200 bg-red-50 p-3 w-72"
+                              >
+                                <input type="hidden" name="entryId" value={e.id} />
+                                <textarea
+                                  name="reason"
+                                  required
+                                  placeholder="เหตุผล เช่น ออกตามกฎหมายฉบับอื่น..."
+                                  className="w-full rounded border border-stone-300 p-2 text-sm"
+                                  rows={2}
+                                />
+                                <input
+                                  name="correctAct"
+                                  placeholder="กฎหมายแม่บทที่ถูกต้อง (ถ้าทราบ)"
+                                  className="w-full rounded border border-stone-300 p-2 text-sm"
+                                />
+                                <input
+                                  name="contributor"
+                                  placeholder="ชื่อ/สังกัด (ไม่บังคับ)"
+                                  className="w-full rounded border border-stone-300 p-2 text-sm"
+                                />
+                                <button className="rounded bg-red-700 text-white px-3 py-1.5">
+                                  ส่งข้อโต้แย้ง
+                                </button>
+                              </form>
+                            </details>
+                          </div>
                         </details>
                       </div>
                     </div>

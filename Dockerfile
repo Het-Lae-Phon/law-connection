@@ -5,7 +5,7 @@
 FROM node:24-slim AS builder
 WORKDIR /app
 COPY web/package.json web/package-lock.json ./
-RUN npm ci
+RUN npm install
 COPY web/ .
 ENV DATABASE_URL="file:/data/dev.db"
 RUN npx prisma generate && npm run build

@@ -1,13 +1,13 @@
-// Prototype uses SQLite; switch provider to "postgresql" + DATABASE_URL for deployment.
 generator client {
   provider      = "prisma-client-js"
-  // native for local dev; debian target for the Docker runtime image
-  binaryTargets = ["native", "debian-openssl-3.0.x"]
+  // native = local dev; debian = Docker/HF Space; rhel = Vercel serverless
+  binaryTargets = ["native", "debian-openssl-3.0.x", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL") // file:./dev.db locally; file:/data/dev.db in deployment
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 // Canonical registry of primary legislation (พ.ร.บ. / พ.ร.ก. / ประมวลกฎหมาย / รัฐธรรมนูญ).
@@ -20,6 +20,11 @@ model Act {
   shortName String // e.g. "คุ้มครองข้อมูลส่วนบุคคล"
   year      Int? // B.E. year of the base act, when known
   fullName  String // e.g. "พระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562"
+  // #4 repeal marking — never delete: "active" | "repealed"
+  status       String  @default("active")
+  repealedById Int? // the Act that repealed this one
+  repealedBy   Act?    @relation("ActRepeals", fields: [repealedById], references: [id])
+  repeals      Act[]   @relation("ActRepeals")
   entries   GazetteEntry[]
   contributions Contribution[]
   sources   Source[]
@@ -63,6 +68,11 @@ model GazetteEntry {
   act            Act?     @relation(fields: [actId], references: [id])
   linkSource     String? // how actId was derived: "title" | "pdf" | "community"
   verifyStatus   String   @default("machine") // machine | verified | disputed
+  legalBasis     String?
+  // #4: the entry that revoked this instrument (schema ready; extraction follow-up)
+  revokedById    Int?
+  revokedBy      GazetteEntry?  @relation("EntryRevokes", fields: [revokedById], references: [id])
+  revokes        GazetteEntry[] @relation("EntryRevokes") // authorising section(s) from the preamble, e.g. "มาตรา ๔"
   contributions  Contribution[]
   documentText   DocumentText?
 

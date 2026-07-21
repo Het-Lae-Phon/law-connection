@@ -83,14 +83,28 @@ export function scoreEntry(e: Scorable, tokens: string[], compactQuery: string):
 
 const CANDIDATE_CAP = 600;
 
-export async function searchEntries(query: string, instrumentType: string | null) {
+export interface YearRange {
+  /** พ.ศ. inclusive bounds — either side optional */
+  fromBE?: number;
+  toBE?: number;
+}
+
+export async function searchEntries(
+  query: string,
+  instrumentType: string | null,
+  range: YearRange = {},
+) {
   const tokens = tokenize(query);
-  if (!tokens.length && !instrumentType) return { tokens, total: 0, capped: false, entries: [] };
+  if (!tokens.length && !instrumentType && !range.fromBE && !range.toBE)
+    return { tokens, total: 0, capped: false, entries: [] };
 
   const where = {
     AND: [
       ...tokens.map((t) => ({ title: { contains: t } })),
       ...(instrumentType ? [{ instrumentType }] : []),
+      // ค้นตามช่วงเวลา: bound by gazette publication date (พ.ศ., inclusive)
+      ...(range.fromBE ? [{ publishedAt: { gte: new Date(Date.UTC(range.fromBE - 543, 0, 1)) } }] : []),
+      ...(range.toBE ? [{ publishedAt: { lt: new Date(Date.UTC(range.toBE - 543 + 1, 0, 1)) } }] : []),
     ],
   };
   const candidates = await prisma.gazetteEntry.findMany({
@@ -107,14 +121,21 @@ export async function searchEntries(query: string, instrumentType: string | null
   return { tokens, total: scored.length, capped: candidates.length >= CANDIDATE_CAP, entries: scored };
 }
 
-export async function searchActs(query: string, take = 5) {
+// Full ranked act search (optionally narrowed to an actType). Returns the
+// whole scored list so callers can paginate.
+export async function searchActsRanked(query: string, actType: string | null = null) {
   const tokens = tokenize(query);
   if (!tokens.length) return [];
   const acts = await prisma.act.findMany({
-    where: { AND: tokens.map((t) => ({ fullName: { contains: t } })) },
+    where: {
+      AND: [
+        ...tokens.map((t) => ({ fullName: { contains: t } })),
+        ...(actType ? [{ actType }] : []),
+      ],
+    },
     include: { _count: { select: { entries: true } } },
     orderBy: { entries: { _count: "desc" } },
-    take: take * 4,
+    take: 300,
   });
   const cq = compact(tokens.join(""));
   return acts
@@ -126,6 +147,9 @@ export async function searchActs(query: string, take = 5) {
       return { a, s };
     })
     .sort((x, y) => y.s - x.s)
-    .slice(0, take)
     .map(({ a }) => a);
+}
+
+export async function searchActs(query: string, take = 5) {
+  return (await searchActsRanked(query)).slice(0, take);
 }
