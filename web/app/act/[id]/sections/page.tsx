@@ -18,6 +18,7 @@ import {
   type StructuralNode,
 } from "@/lib/thai-law";
 import { getDynamicAct } from "@/lib/dynamic-act";
+import { SectionNav, type ChapterLink } from "@/app/components/section-nav";
 
 /**
  * ตัวบทฉบับเต็ม (โครงสร้างรายมาตรา) — THE reader for the whole registry:
@@ -202,6 +203,40 @@ export default async function ActSectionsPage({
 
   const byNumber = new Map(data.sections.map((s) => [s.record.id, s]));
 
+  // มาตรา navigation: every section number + one chip per structure heading
+  const sectionNumbers = data.sections.map((s) => s.record.number);
+  const chapters: ChapterLink[] = [];
+  const firstSectionAnchor = (node: StructuralNode): string | null => {
+    if (node.kind === "section_ref") {
+      const rec = node.section ? data.byId(node.section) : undefined;
+      return rec && byNumber.has(rec.id) ? `ม-${rec.number}` : null;
+    }
+    for (const c of node.children ?? []) {
+      const a = firstSectionAnchor(c);
+      if (a) return a;
+    }
+    return null;
+  };
+  for (const node of data.structure) {
+    if (node.kind === "section_ref") continue;
+    const anchor = firstSectionAnchor(node);
+    const label =
+      node.title_th ??
+      (node.kind === "transitional" ? "บทเฉพาะกาล" : node.number_th ? `หมวด ${node.number_th}` : null);
+    if (anchor && label) chapters.push({ label: label.slice(0, 40), anchor });
+  }
+  // a code has hundreds of หมวด — keep the chip strip at the top ranks only
+  if (chapters.length > 30) {
+    const top = chapters.filter((c) => /^(บรรพ|ภาค|ลักษณะ|บทเฉพาะกาล)/.test(c.label));
+    if (top.length >= 2) {
+      chapters.length = 0;
+      chapters.push(...(top.length > 40 ? top.filter((c) => /^(บรรพ|ภาค|บทเฉพาะกาล)/.test(c.label)) : top));
+    } else {
+      chapters.length = 30;
+    }
+  }
+
+
   // walk the structure tree, emitting headings + sections
   const renderNode = (node: StructuralNode, depth: number): React.ReactNode => {
     if (node.kind === "section_ref") {
@@ -308,6 +343,8 @@ export default async function ActSectionsPage({
           </p>
         )}
       </header>
+
+      <SectionNav numbers={sectionNumbers} chapters={chapters} />
 
       {data.definitions.length > 0 && (
         <details className="rounded-lg border border-dashed border-stone-300 bg-white p-4">
