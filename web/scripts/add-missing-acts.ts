@@ -33,6 +33,9 @@ interface MissingAct {
   verifiedBy: string;
   // sub-regulation titles to re-link (must currently be unlinked)
   linkPattern: string; // substring match against unlinked entry titles
+  // guard against false links: skip titles containing any of these
+  // (e.g. "แพทยสภา" must NOT catch "ทันตแพทยสภา" / "สัตวแพทยสภา")
+  excludePatterns?: string[];
   // authoritative regulator site to seed as a Source
   regulatorName: string;
   regulatorUrl: string;
@@ -70,6 +73,42 @@ const MISSING_ACTS: MissingAct[] = [
     linkPattern: "คณะกรรมการการแพทย์ฉุกเฉิน",
     regulatorName: "สถาบันการแพทย์ฉุกเฉินแห่งชาติ (สพฉ.)",
     regulatorUrl: "https://www.niems.go.th",
+  },
+  {
+    actType: "พระราชบัญญัติ",
+    shortName: "สถาปนิก",
+    year: 2543,
+    fullName: "พระราชบัญญัติสถาปนิก พ.ศ. 2543",
+    volume: 117,
+    issue: "10",
+    category: "ก",
+    page: 0, // gazette footnote omits the page; เล่ม/ตอน/วันที่ verified
+    publishedAt: "2000-02-20",
+    pdfUrl: "https://download.asa.or.th/03media/04law/aa/aa43-upd66.pdf",
+    verifiedBy:
+      "OCR of ASA-hosted consolidated PDF (2026-07-08): ประกาศในราชกิจจานุเบกษา เล่ม 117 ตอนที่ 10 ก วันที่ 20 กุมภาพันธ์ 2543; ให้ไว้ ณ วันที่ 7 กุมภาพันธ์ 2543",
+    linkPattern: "สภาสถาปนิก",
+    regulatorName: "สภาสถาปนิก",
+    regulatorUrl: "https://www.act.or.th",
+  },
+  {
+    actType: "พระราชบัญญัติ",
+    shortName: "วิชาชีพเวชกรรม",
+    year: 2525,
+    fullName: "พระราชบัญญัติวิชาชีพเวชกรรม พ.ศ. 2525",
+    volume: 99,
+    issue: "111 (ฉบับพิเศษ)",
+    category: "ก",
+    page: 1,
+    publishedAt: "1982-08-11",
+    pdfUrl: "https://www.tmc.or.th/download/law-medical_2525.pdf",
+    verifiedBy:
+      "OCR of Krisdika-sourced PDF (2026-07-08): ราชกิจจานุเบกษา เล่ม 99 ตอนที่ 111 ฉบับพิเศษ หน้า 1, 11 สิงหาคม 2525",
+    linkPattern: "แพทยสภา",
+    // must not catch the Dental / Veterinary councils
+    excludePatterns: ["ทันตแพทยสภา", "สัตวแพทยสภา"],
+    regulatorName: "แพทยสภา",
+    regulatorUrl: "https://www.tmc.or.th",
   },
 ];
 
@@ -126,7 +165,13 @@ async function main() {
 
     // link existing orphaned sub-regulations
     const orphans = await prisma.gazetteEntry.findMany({
-      where: { actId: null, title: { contains: m.linkPattern } },
+      where: {
+        actId: null,
+        title: { contains: m.linkPattern },
+        ...(m.excludePatterns?.length
+          ? { NOT: m.excludePatterns.map((p) => ({ title: { contains: p } })) }
+          : {}),
+      },
     });
     let linked = 0;
     for (const e of orphans) {
